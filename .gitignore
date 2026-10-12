@@ -1,0 +1,29 @@
+# backend/, frontend/는 각 프로젝트 생성기가 만드는 .gitignore를 따로 둔다.
+# 여기에는 저장소 전체에 공통인 규칙만 둔다.
+
+# OS · 편집기
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# 환경 변수 · 시크릿 (절대 커밋하지 않는다)
+.env
+.env.*
+!.env.example
+
+# 로그
+*.log
+
+# GIS 작업물
+# 지오레퍼런싱용 원본 스캔·작업 이미지는 용량이 커서 저장소에 넣지 않는다.
+# 원본의 출처 URL은 data/frontlines/README.md에 기록한다.
+data/raw/
+*.aux.xml
+*.qgs~
+*.qgz~
+
+# Korean War Project 구글어스 오버레이는 저작권이 있어 재배포하지 않는다 (대조용으로 로컬에만 둔다)
+*.kmz

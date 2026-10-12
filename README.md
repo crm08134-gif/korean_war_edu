@@ -34,7 +34,7 @@ docker compose up -d          # PostgreSQL 18 + PostGIS 3.6 (localhost:5432)
 
 ## 개발 방식
 
-- 이슈 → `feat/#12-frontline-api` 형식 브랜치 → PR → Squash merge
+- `feat/frontline-api` 형식 브랜치 → PR → Squash merge
 - 커밋 메시지는 [Conventional Commits](https://www.conventionalcommits.org/ko/v1.0.0/) (`feat:`, `fix:`, `docs:` …)
 - `main`에는 직접 푸시하지 않습니다
 - 전선 데이터 변경도 PR로 올리고 근거 지도와 변경 이유를 남깁니다

@@ -8,7 +8,7 @@
 
 | 경로 | 내용 |
 | --- | --- |
-| `backend/` | Spring Boot API (예정) |
+| `backend/` | Spring Boot API |
 | `frontend/` | Next.js + MapLibre GL JS (예정) |
 | `data/frontlines/` | 전환점 전선 스냅샷 GeoJSON과 제작 규칙 |
 | `docs/adr/` | 설계 결정 기록 |
@@ -16,12 +16,16 @@
 
 ## 로컬 실행
 
+준비: JDK 25, Docker Desktop
+
 ```bash
-cp .env.example .env          # 비밀번호를 바꾼다
-docker compose up -d          # PostgreSQL 18 + PostGIS 3.6 (localhost:5432)
+cp .env.example .env    # POSTGRES_PASSWORD를 바꾼다. 5432를 이미 쓰고 있으면 POSTGRES_PORT도 바꾼다
+cd backend
+./gradlew bootRun       # PostGIS 컨테이너가 함께 뜬다 (Spring Boot Docker Compose 지원)
 ```
 
-백엔드와 프론트 실행 방법은 각 프로젝트를 만든 뒤 추가합니다.
+- 상태 확인: http://localhost:8080/actuator/health
+- IntelliJ에서 실행할 때는 Run Configuration의 Working directory를 `backend`로 지정한다
 
 ## 기술 스택
 

@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: backend
+  docker:
+    compose:
+      file: ../compose.yaml

@@ -9,6 +9,8 @@ name: korean-war-map
 services:
   db:
     image: postgis/postgis:18-3.6
+    labels:
+      org.springframework.boot.service-connection: postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-warmap}
       POSTGRES_USER: ${POSTGRES_USER:-warmap}

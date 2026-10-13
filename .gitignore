@@ -5,6 +5,7 @@
 .DS_Store
 Thumbs.db
 .idea/
+.run/
 *.iml
 .vscode/
 *.swp

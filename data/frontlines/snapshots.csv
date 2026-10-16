@@ -1,0 +1,2 @@
+snapshot_date,source_map,note
+1950-06-25,위도 38°N 계산 (외곽선: Natural Earth 10m v5.1.2),"개전 전 남북의 경계선이던 38°N. data/reference/korea_outline.geojson과의 교차점 중 가장 서쪽(옹진반도 서해안 125.117912°E)과 가장 동쪽(동해안 128.749988°E)을 끝점으로 하고, 사이에 0.01° 간격으로 점을 넣었다. 해주만 바다 구간(약 15.6km)도 선을 잇는다. 계산 방법은 data/frontlines/README.md 참고."

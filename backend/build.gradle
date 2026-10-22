@@ -20,6 +20,7 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'tools.jackson.dataformat:jackson-dataformat-csv'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
@@ -40,4 +41,12 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// 저장소 최상위 data/frontlines의 스냅샷 파일을 jar 안 frontlines/ 로 복사한다
+tasks.named('processResources') {
+    from('../data/frontlines') {
+        include 'snapshots.csv', '*.geojson'
+        into 'frontlines'
+    }
 }

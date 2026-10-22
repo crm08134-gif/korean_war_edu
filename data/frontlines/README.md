@@ -30,6 +30,21 @@ data/frontlines/
 - **`<날짜>.extra_areas.geojson`:** 고립 지역·교두보마다 Polygon Feature 하나. 서로 겹치지 않게 그린다. DB에는 MultiPolygon 하나로 합쳐 넣는다.
 - `properties`는 쓰지 않는다. 날짜·근거·메모는 `snapshots.csv`에만 적는다.
 
+## 앱에 들어가는 방식
+
+이 폴더가 기준이고 DB는 이 폴더를 따라간다. DB를 손으로 고쳐도 다음에 앱이 켜질 때 파일 내용으로 되돌아가므로, 고칠 때는 파일을 고쳐 PR로 올린다.
+
+1. 빌드할 때 이 폴더의 `snapshots.csv`와 `*.geojson`이 백엔드 jar 안 `frontlines/`로 복사된다 (`backend/build.gradle`의 `processResources`).
+2. 앱이 시작될 때 `FrontlineSnapshotLoader`가 DB `frontline_snapshot`을 맞춘다. CSV에 있는 날짜는 넣거나 덮어쓰고, CSV에 없는 날짜는 지운다.
+3. 아래 중 하나라도 걸리면 이번 시작에서 바꾼 것을 모두 되돌리고(트랜잭션 하나) 앱이 뜨지 않는다. 로그에 어느 날짜·파일인지 나온다.
+   - CSV: 모르는 열이 있다, 날짜나 근거 지도가 비었다, 같은 날짜가 두 번 있다, 줄이 하나도 없다
+   - 파일: CSV 날짜의 `front_line` 파일이 없다, CSV에 없는 날짜의 도형 파일이 있다
+   - 전선: Feature가 하나가 아니다, LineString이 아니다, 서→동이 아니다
+   - 추가 영역: Polygon이 아니다, 서로 겹친다
+4. PR마다 CI의 `./gradlew build`가 테스트용 PostGIS 컨테이너에 같은 방식으로 적재해 보므로, 위 규칙을 어긴 데이터는 머지 전에 걸린다.
+
+끝점이 해안선 위에 있는지, 앞뒤 스냅샷과 견주어 이상하지 않은지는 앱이 보지 않는다. 제작 도구의 `validate`와 `preview`로 확인한다 ([scripts/frontline/README.md](../../scripts/frontline/README.md)).
+
 ## 규칙
 
 - **전선:** 서해안에서 동해안까지 이어지는 선 하나. 방향은 서→동으로 통일한다.

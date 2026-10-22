@@ -1,4 +1,4 @@
-# PR을 올리거나 main에 머지될 때마다 백엔드를 빌드하고 테스트한다.
+# PR을 올리거나 main에 머지될 때마다 백엔드와 프론트를 빌드하고 검사한다.
 name: CI
 
 on:
@@ -32,3 +32,31 @@ jobs:
 
       - name: 빌드와 테스트
         run: ./gradlew build
+
+  frontend:
+    name: frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: 1   # 빌드 통계를 Next.js에 보내지 않는다
+    steps:
+      - name: 코드 받기
+        uses: actions/checkout@v7
+
+      - name: Node.js LTS 설치
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 의존성 설치 (package-lock.json 그대로)
+        run: npm ci
+
+      - name: 린트
+        run: npm run lint
+
+      - name: 빌드 (타입 검사 포함)
+        run: npm run build

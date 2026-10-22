@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* 폰 화면 시안의 색과 글꼴. 지도 안의 색은 src/lib/map-style.ts에 있다 */
+@theme {
+  --color-ink: #1a1d21;
+  --color-muted: #5b636d;
+  --color-rule: #c9cfd6;
+  --color-rule-soft: #d5dae0;
+  --color-dot: #b4bcc5;
+  --color-sea: #e9edf1;
+  --font-sans: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+
+body {
+  background: var(--color-sea);
+  color: var(--color-ink);
+}

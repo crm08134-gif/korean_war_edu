@@ -11,10 +11,21 @@ data/frontlines/
 └─ 1950-09-15.extra_areas.geojson   추가 영역 (있는 날짜만)
 ```
 
+| 경로 | 내용 |
+| --- | --- |
+| `backend/` | Spring Boot API |
+| `frontend/` | Next.js + MapLibre GL JS 지도 화면 |
+| `data/frontlines/` | 전환점 전선 스냅샷(목록 CSV, GeoJSON)과 제작 규칙 |
+| `data/reference/` | 한반도 외곽선 등 계산 기준 데이터 |
+| `docs/adr/` | 설계 결정 기록 |
+| `scripts/` | 저장소 설정 스크립트, 전선 스냅샷 제작 도구(`scripts/frontline/`) |
 스냅샷 하나가 DB `frontline_snapshot`의 한 행이 된다. CSV의 열 이름과 도형 파일 이름(`front_line`, `extra_areas`)은 테이블 컬럼 이름과 같다.
 
 ### `snapshots.csv`
 
+준비: JDK 25, Docker Desktop, Node.js LTS
+
+**백엔드**
 | 열 | 필수 | 내용 |
 | --- | --- | --- |
 | `snapshot_date` | 예 | `YYYY-MM-DD`. 도형 파일 이름의 날짜와 같아야 한다 |
@@ -55,6 +66,22 @@ data/frontlines/
 - **좌표계:** GeoJSON 표준(RFC 7946)에 따라 WGS 84 경위도, 소수 6자리.
 - **변경:** 모든 변경은 PR로 올리고, PR 설명에 근거 지도와 변경 이유를 적는다.
 
+- 상태 확인: http://localhost:8080/actuator/health
+- API 문서: http://localhost:8080/swagger-ui.html
+- 전선 스냅샷: http://localhost:8080/api/snapshots (앱이 시작될 때 `data/frontlines/`의 파일로 DB를 맞춘다)
+- IntelliJ에서 실행할 때는 Run Configuration의 Working directory를 `backend`로 지정한다
+
+**프론트** (백엔드를 켜 둔 채로, 다른 터미널에서)
+
+```bash
+cd frontend
+npm install
+npm run dev             # http://localhost:3000
+```
+
+- 같은 Wi-Fi의 폰에서는 `npm run dev`가 알려 주는 `Network:` 주소(`http://192.168.x.x:3000`)로 연다. 방화벽 등은 [frontend/README.md](frontend/README.md) 참고
+
+## 기술 스택
 ## 작업 순서
 
 1. 브랜치 생성 (예: `data/1950-08-04-pusan-perimeter`)

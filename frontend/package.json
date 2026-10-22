@@ -8,7 +8,8 @@
     "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "icons": "node scripts/make-app-icons.mjs"
   },
   "dependencies": {
     "maplibre-gl": "6.15.0",

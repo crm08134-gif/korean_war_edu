@@ -38,6 +38,27 @@ ogr2ogr -f GeoJSON data/reference/korea_outline.geojson PG:dbname=warmap korea_o
 
 </details>
 
+## `south_korea_outline.geojson`: 남한 외곽선
+
+| 항목 | 내용 |
+| --- | --- |
+| 원본 | 위와 같은 Natural Earth 1:10m Admin 0 – Countries, v5.1.2 |
+| 내용 | 대한민국(KOR) 폴리곤만 담은 MultiPolygon 하나 (섬 포함 53조각, 82KB). 북쪽 경계는 Natural Earth가 그린 현재 군사분계선이다 |
+| 좌표 | WGS 84 경위도, 소수 6자리 |
+| 쓰는 곳 | 앱 아이콘 배경(`frontend/scripts/make-app-icons.mjs`)만. 1950년대 전선과 섞이므로 지도 화면에는 쓰지 않는다 |
+
+<details>
+<summary>다시 만드는 방법</summary>
+
+```bash
+# ne_10m_admin_0_countries.{shp,shx,dbf,prj,cpg}를 v5.1.2 태그에서 받은 뒤
+ogr2ogr -f GeoJSON data/reference/south_korea_outline.geojson ne_10m_admin_0_countries.shp \
+  -nln south_korea_outline -nlt PROMOTE_TO_MULTI -where "ADM0_A3 = 'KOR'" -select "" \
+  -lco RFC7946=YES -lco COORDINATE_PRECISION=6
+```
+
+</details>
+
 ## 프론트 지도 바탕: `frontend/public/geo/`
 
 프론트 지도는 배경 타일을 쓰지 않고 아래 두 파일로 바탕을 그린다. 현대 지도 타일에는 지금의 군사분계선과 지명이 나와 1950년대 전선과 섞이기 때문이다. 둘 다 위 외곽선과 같은 Natural Earth 10m v5.1.2에서 만든다.

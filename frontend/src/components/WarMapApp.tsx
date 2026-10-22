@@ -43,7 +43,7 @@ export default function WarMapApp() {
     <main className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
       <header className="flex items-start justify-between px-5 pt-5 pb-1">
         <div className="flex flex-col gap-0.5">
-          <div className="text-[13px] font-medium text-muted">6·25 전쟁 지도</div>
+          <div className="text-[13px] font-medium text-muted">Korean War</div>
           <h1 className="font-serif text-[26px] font-semibold tracking-tight tabular-nums">
             {current ? formatDate(current.snapshotDate) : " "}
           </h1>

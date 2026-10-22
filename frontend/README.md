@@ -22,6 +22,38 @@ PC와 폰이 같은 Wi-Fi에 있으면 된다.
 2. 열리지 않으면 Windows 방화벽이 Node.js를 막고 있을 수 있다. 처음 실행할 때 뜨는 창에서 "개인 네트워크" 허용을 누르거나, Windows 보안 → 방화벽 → "앱 허용"에서 Node.js를 개인 네트워크에 허용한다.
 3. 화면이 "불러오는 중"에서 멈추면 주소의 앞자리가 `next.config.ts`의 `allowedDevOrigins`(192.168 / 10 / 172로 시작하는 사설 IP)에 들어 있는지 확인한다.
 
+### 다른 네트워크(LTE, 집 Wi-Fi)에서 보기
+
+PC의 3000번을 HTTPS 주소로 잠깐 열어 준다. 고정 주소 배포 전까지 테스트용이다.
+
+```bash
+npm run build
+npm run start                                   # 백엔드도 켜 둔다
+cloudflared tunnel --url http://localhost:3000  # 다른 터미널. https://….trycloudflare.com 주소가 나온다
+```
+
+- cloudflared 설치(Windows): `winget install -e --id Cloudflare.cloudflared`
+- 계정 없이 쓰는 Quick Tunnel이라 실행할 때마다 주소가 바뀐다. 터미널을 닫으면 주소도 닫힌다.
+
+### 홈 화면에 설치 (PWA)
+
+주소창 없이 앱처럼 열린다. HTTPS 주소(위 터널)에서 설치한다. `http://192.168.x.x` 주소에서는 바로가기만 생기고 앱처럼 열리지 않는다.
+
+- 안드로이드(크롬): ⋮ → 앱 설치(또는 홈 화면에 추가 → 설치)
+- 아이폰(사파리): 공유 → 홈 화면에 추가
+
+설치 정보는 `src/app/manifest.ts`, 아이폰 설정은 `src/app/layout.tsx`의 `appleWebApp`에 있다.
+
+### 앱 아이콘
+
+전투복 무늬 색으로 칠한 남한을 배경으로, 거꾸로 세운 총 위에 태극기를 그린 철모를 얹었다. 전사자를 기리는 모습이다.
+
+- 태극기: 국가기록원의 국기 작도법과 국기법 시행령의 색으로 그린다.
+- 남한: `data/reference/south_korea_outline.geojson`에서 그리고, 본토가 아이콘 높이를 채운다. 제주·울릉도·독도는 틀 밖이라 잘린다.
+- 무늬: 육군 전투복(화강암 무늬)의 다섯 색에 맞춘 근사색이다. 무늬 모양은 군복 도안을 옮기지 않고 스크립트가 고정 시드로 새로 만든다.
+
+그림을 바꾸면 `scripts/make-app-icons.mjs`를 고친 뒤 `npm run icons`로 PNG 다섯 개를 다시 만들어 함께 커밋한다.
+
 ## 구조
 
 | 경로 | 내용 |
@@ -33,6 +65,7 @@ PC와 폰이 같은 Wi-Fi에 있으면 된다.
 | `src/lib/map-style.ts` | 지도 레이어와 색 |
 | `src/lib/snapshots.ts` | API 응답 타입, 날짜 계산 |
 | `public/geo/` | 바다 덮개와 주변 나라. 만드는 방법은 [data/reference/README.md](../data/reference/README.md) |
+| `src/app/manifest.ts`, `public/icons/`, `src/app/icon.png`, `src/app/apple-icon.png` | 홈 화면 설치(PWA) 정보와 아이콘 (`scripts/make-app-icons.mjs`로 만듦) |
 
 ## 지도 그리는 방식
 

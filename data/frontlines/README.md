@@ -18,6 +18,7 @@ data/frontlines/
 | 열 | 필수 | 내용 |
 | --- | --- | --- |
 | `snapshot_date` | 예 | `YYYY-MM-DD`. 도형 파일 이름의 날짜와 같아야 한다 |
+| `title` | 예 | 그 시점을 부르는 사건 이름. 화면 헤더와 이전/다음 버튼에 나오므로 짧게 쓴다 (예: 개전, 대전 함락). 사건 카드(`event`)와는 따로이고, 날짜로만 이어진다 |
 | `source_map` | 예 | 근거 지도 (예: CMH *South to the Naktong* Map IV) |
 | `note` | | 다른 지도·사료와의 차이 등 |
 
@@ -28,13 +29,29 @@ data/frontlines/
 
 - **`<날짜>.front_line.geojson`:** Feature 하나, LineString 하나.
 - **`<날짜>.extra_areas.geojson`:** 고립 지역·교두보마다 Polygon Feature 하나. 서로 겹치지 않게 그린다. DB에는 MultiPolygon 하나로 합쳐 넣는다.
-- `properties`는 쓰지 않는다. 날짜·근거·메모는 `snapshots.csv`에만 적는다.
+- `properties`는 쓰지 않는다. 날짜·이름·근거·메모는 `snapshots.csv`에만 적는다.
+
+## 앱에 들어가는 방식
+
+이 폴더가 기준이고 DB는 이 폴더를 따라간다. DB를 손으로 고쳐도 다음에 앱이 켜질 때 파일 내용으로 되돌아가므로, 고칠 때는 파일을 고쳐 PR로 올린다.
+
+1. 빌드할 때 이 폴더의 `snapshots.csv`와 `*.geojson`이 백엔드 jar 안 `frontlines/`로 복사된다 (`backend/build.gradle`의 `processResources`).
+2. 앱이 시작될 때 `FrontlineSnapshotLoader`가 DB `frontline_snapshot`을 맞춘다. CSV에 있는 날짜는 넣거나 덮어쓰고, CSV에 없는 날짜는 지운다.
+3. 아래 중 하나라도 걸리면 이번 시작에서 바꾼 것을 모두 되돌리고(트랜잭션 하나) 앱이 뜨지 않는다. 로그에 어느 날짜·파일인지 나온다.
+   - CSV: 모르는 열이 있다, 날짜·이름·근거 지도 중 빈 칸이 있다, 같은 날짜가 두 번 있다, 줄이 하나도 없다
+   - 파일: CSV 날짜의 `front_line` 파일이 없다, CSV에 없는 날짜의 도형 파일이 있다
+   - 전선: Feature가 하나가 아니다, LineString이 아니다, 서→동이 아니다
+   - 추가 영역: Polygon이 아니다, 서로 겹친다
+4. PR마다 CI의 `./gradlew build`가 테스트용 PostGIS 컨테이너에 같은 방식으로 적재해 보므로, 위 규칙을 어긴 데이터는 머지 전에 걸린다.
+
+끝점이 해안선 위에 있는지, 앞뒤 스냅샷과 견주어 이상하지 않은지는 앱이 보지 않는다. 제작 도구의 `validate`와 `preview`로 확인한다 ([scripts/frontline/README.md](../../scripts/frontline/README.md)).
 
 ## 규칙
 
 - **전선:** 서해안에서 동해안까지 이어지는 선 하나. 방향은 서→동으로 통일한다.
 - **끝점:** 선은 육지 위에서만 그리고, 양 끝점은 해안선(`data/reference/korea_outline.geojson`) 위에 둔다. 바다로 늘리지 않는다. 만(灣)처럼 육지 사이에 낀 바다는 선으로 이어도 된다.
 - **추가 영역:** 전선 하나로 설명되지 않는 고립 지역·교두보(인천상륙 직후, 흥남 철수 등)는 따로 그린다.
+  - 화면은 전선 양 끝을 정서·정동으로 늘려 양측을 칠한다. 그래서 끝점이 남해안이나 하구에 있으면 늘린 선이 지나는 육지가 반대쪽 색이 된다(낙동강 방어선의 남서 해안 등). 이 육지는 제작 도구 `sides`로 찾아 추가 영역으로 넣는다. 본토는 전선에 맞닿은 쪽 색을 따르고, 10km 안의 섬은 가까운 땅의 색을 따른다. 양쪽 땅이 다 가까운 섬(거제도 등)과 먼 섬은 화면 그대로 둔다.
 - **양측 영역:** 저장하지 않는다. 외곽선을 전선으로 나눠 계산한다 (북측 빨강, 남측 파랑).
 - **근거:** 그 날짜의 전선이 CMH 지도(필요하면 본문과 함께)로 확인될 때만 스냅샷을 만든다. 근거 지도는 `source_map`에 반드시 적는다.
 - **좌표계:** GeoJSON 표준(RFC 7946)에 따라 WGS 84 경위도, 소수 6자리.
@@ -68,7 +85,8 @@ data/frontlines/
 - CMH 지도 목록: https://www.koreanwar.org/html/maps-army.html
 - 지도 이미지: 인터넷 아카이브의 CMH Pub 20-2 PDF에는 컬러 지도가 빠져 있다. 공간사 3권의 지도는 [Korean Service](https://www.koreanwaronline.com/history/)의 각 권 목차에서 볼 수 있다. 근거는 그 사이트가 아니라 원본 권과 지도 번호로 적는다.
 - 개전 스냅샷(1950-06-25)은 사료가 그날의 경계를 38선으로 기록하므로 위도 38°N을 쓴다 (아래 참고).
-- 정전 스냅샷의 군사분계선은 CMH 1953-07-27 지도로 그린다.
+- 낙동강 방어선 스냅샷(1950-08-04)은 *South to the Naktong* 컬러 Map IV "The Pusan Perimeter, 4 August 1950"으로 그린다. 지도에 선이 없는 마산 쪽과 영덕 앞은 같은 지도의 부대 위치와 본문(15장)으로 이었다(`snapshots.csv` note).
+- 정전 스냅샷(1953-07-27)은 *Truce Tent* 컬러 Map VIII "The Eighth Army Front Line, 27 July 1953"(유엔군 쪽 전선)으로 그린다. 군사분계선 자체는 같은 권 컬러 Map IX "The Demarcation Line, 27 July 1953"에 있다.
 
 ## 개전 스냅샷(1950-06-25)
 

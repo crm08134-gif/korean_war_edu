@@ -10,7 +10,7 @@ Natural Earth 같은 데이터에서, 전선의 픽셀 위치는 지도 이미�
   trace     전선 꼭짓점(픽셀)을 경위도로 옮겨 정리하고 GeoJSON으로 저장
   area      추가 영역(고립 지역·교두보) 꼭짓점 고리를 다각형으로 저장
   preview   추출한 선을 원본 지도 위에 다시 겹친 그림, 양측(북 빨강·남 파랑) 지도
-  validate  V1 마이그레이션으로 만든 DB에 snapshots.csv와 도형 파일을 넣어 검증
+  validate  백엔드 마이그레이션(V1, V2 …)을 모두 적용한 DB에 snapshots.csv와 도형 파일을 넣어 검증
 
 필요: python3, numpy, pillow, shapely, opencv-python-headless, GDAL(ogr2ogr), PostgreSQL+PostGIS(validate)
 """
@@ -19,6 +19,7 @@ import csv
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -379,9 +380,14 @@ def cmd_validate(a):
     r = psql('-d', 'postgres', '-c', f'CREATE DATABASE {a.db}')
     if r.returncode:
         sys.exit(r.stderr)
-    r = psql('-d', a.db, '-f', a.migration)
-    if r.returncode:
-        sys.exit('마이그레이션 실패: ' + r.stderr)
+    # Flyway처럼 V<버전>__<설명>.sql을 버전 순서대로 모두 적용한다 (V2가 V1에 열을 더하는 식이라 하나만 적용하면 표가 다르다)
+    def version(name):
+        return tuple(int(x) for x in re.split(r'[._]', name[1:].split('__')[0]))
+    migrations = sorted((f for f in os.listdir(a.migrations) if re.match(r'V\d+([._]\d+)*__.+\.sql$', f)), key=version)
+    for name in migrations:
+        r = psql('-d', a.db, '-f', os.path.join(a.migrations, name))
+        if r.returncode:
+            sys.exit(f'마이그레이션 실패 ({name}): ' + r.stderr)
     subprocess.run(['ogr2ogr', '-f', 'PostgreSQL', f'PG:dbname={a.db}', a.outline, '-nln', 'outline',
                     '-nlt', 'MULTIPOLYGON', '-lco', 'GEOMETRY_NAME=geom'], check=True)
     root = a.dir
@@ -409,9 +415,10 @@ def cmd_validate(a):
         if os.path.exists(ap):
             parts = [json.dumps(f['geometry']) for f in read_json(ap)['features']]
             areas = 'ST_Multi(ST_Collect(ARRAY[' + ','.join(f"ST_GeomFromGeoJSON($j${p}$j$)" for p in parts) + ']))'
-        sql = (f"INSERT INTO frontline_snapshot (snapshot_date, front_line, extra_areas, source_map, note) VALUES "
-               f"(:'d'::date, ST_GeomFromGeoJSON(:'g'), {areas}, :'s', NULLIF(:'n',''))")
-        r = psql('-d', a.db, '-v', f'd={d}', '-v', f'g={geom}', '-v', f"s={row['source_map']}", '-v', f"n={row['note']}", input=sql)
+        sql = (f"INSERT INTO frontline_snapshot (snapshot_date, title, front_line, extra_areas, source_map, note) VALUES "
+               f"(:'d'::date, :'t', ST_GeomFromGeoJSON(:'g'), {areas}, :'s', NULLIF(:'n',''))")
+        r = psql('-d', a.db, '-v', f'd={d}', '-v', f"t={row.get('title') or ''}", '-v', f'g={geom}',
+                 '-v', f"s={row['source_map']}", '-v', f"n={row['note']}", input=sql)
         if r.returncode:
             problems.append(f'{d}: DB 제약 위반 {r.stderr.strip()}')
             continue
@@ -455,7 +462,7 @@ def main():
     s.add_argument('--areas', help='같은 날짜의 extra_areas 파일')
     s.add_argument('--outline', default=DEFAULT_OUTLINE)
     s = sub.add_parser('validate'); s.add_argument('--dir', default='data/frontlines')
-    s.add_argument('--migration', default='backend/src/main/resources/db/migration/V1__create_frontline_snapshot.sql')
+    s.add_argument('--migrations', default='backend/src/main/resources/db/migration', help='Flyway 마이그레이션 폴더 (V*.sql을 모두 적용)')
     s.add_argument('--outline', default=DEFAULT_OUTLINE); s.add_argument('--db', default='frontline_check')
     s.add_argument('--end-m', type=float, default=100.0)
     a = p.parse_args()

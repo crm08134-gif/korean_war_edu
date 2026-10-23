@@ -25,6 +25,7 @@ class FrontlineSnapshotControllerTests {
 
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$[0].snapshotDate").isEqualTo("1950-06-25");
+        assertThat(result).bodyJson().extractingPath("$[0].title").isEqualTo("개전");
         assertThat(result).bodyJson().extractingPath("$[0].frontLine.coordinates").asArray().hasSize(500);
     }
 

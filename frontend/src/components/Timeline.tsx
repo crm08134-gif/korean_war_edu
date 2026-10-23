@@ -41,7 +41,7 @@ export default function Timeline({
             key={snapshot.snapshotDate}
             type="button"
             onClick={() => onSelect(i)}
-            aria-label={`${formatDate(snapshot.snapshotDate)} 스냅샷 보기`}
+            aria-label={`${formatDate(snapshot.snapshotDate)} ${snapshot.title} 보기`}
             aria-current={i === index ? "step" : undefined}
             className="absolute top-3.5 -ml-3 -mt-3 flex size-6 items-center justify-center"
             style={{ left: percent(snapshot.snapshotDate) }}

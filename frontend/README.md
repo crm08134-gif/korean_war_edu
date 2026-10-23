@@ -58,7 +58,7 @@ cloudflared tunnel --url http://localhost:3000  # 다른 터미널. https://….
 
 | 경로 | 내용 |
 | --- | --- |
-| `src/components/WarMapApp.tsx` | 화면 전체: 날짜, 지도, 범례, 타임라인, 이전/다음 |
+| `src/components/WarMapApp.tsx` | 화면 전체: 날짜와 사건 이름, 지도, 범례, 타임라인, 이전/다음 |
 | `src/components/FrontlineMap.tsx` | MapLibre 지도. 스냅샷이 바뀌면 전선을 1.2초 동안 옮긴다 |
 | `src/components/Timeline.tsx` | 전쟁 기간 전체 줄과 스냅샷 점 |
 | `src/lib/geometry.ts` | 전선으로 양측 나누기(반평면), 보간, 추가 영역의 쪽 판정 |

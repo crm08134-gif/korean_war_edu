@@ -18,6 +18,7 @@ data/frontlines/
 | 열 | 필수 | 내용 |
 | --- | --- | --- |
 | `snapshot_date` | 예 | `YYYY-MM-DD`. 도형 파일 이름의 날짜와 같아야 한다 |
+| `title` | 예 | 그 시점을 부르는 사건 이름. 화면 헤더와 이전/다음 버튼에 나오므로 짧게 쓴다 (예: 개전, 대전 함락). 사건 카드(`event`)와는 따로이고, 날짜로만 이어진다 |
 | `source_map` | 예 | 근거 지도 (예: CMH *South to the Naktong* Map IV) |
 | `note` | | 다른 지도·사료와의 차이 등 |
 
@@ -28,7 +29,7 @@ data/frontlines/
 
 - **`<날짜>.front_line.geojson`:** Feature 하나, LineString 하나.
 - **`<날짜>.extra_areas.geojson`:** 고립 지역·교두보마다 Polygon Feature 하나. 서로 겹치지 않게 그린다. DB에는 MultiPolygon 하나로 합쳐 넣는다.
-- `properties`는 쓰지 않는다. 날짜·근거·메모는 `snapshots.csv`에만 적는다.
+- `properties`는 쓰지 않는다. 날짜·이름·근거·메모는 `snapshots.csv`에만 적는다.
 
 ## 앱에 들어가는 방식
 
@@ -37,7 +38,7 @@ data/frontlines/
 1. 빌드할 때 이 폴더의 `snapshots.csv`와 `*.geojson`이 백엔드 jar 안 `frontlines/`로 복사된다 (`backend/build.gradle`의 `processResources`).
 2. 앱이 시작될 때 `FrontlineSnapshotLoader`가 DB `frontline_snapshot`을 맞춘다. CSV에 있는 날짜는 넣거나 덮어쓰고, CSV에 없는 날짜는 지운다.
 3. 아래 중 하나라도 걸리면 이번 시작에서 바꾼 것을 모두 되돌리고(트랜잭션 하나) 앱이 뜨지 않는다. 로그에 어느 날짜·파일인지 나온다.
-   - CSV: 모르는 열이 있다, 날짜나 근거 지도가 비었다, 같은 날짜가 두 번 있다, 줄이 하나도 없다
+   - CSV: 모르는 열이 있다, 날짜·이름·근거 지도 중 빈 칸이 있다, 같은 날짜가 두 번 있다, 줄이 하나도 없다
    - 파일: CSV 날짜의 `front_line` 파일이 없다, CSV에 없는 날짜의 도형 파일이 있다
    - 전선: Feature가 하나가 아니다, LineString이 아니다, 서→동이 아니다
    - 추가 영역: Polygon이 아니다, 서로 겹친다

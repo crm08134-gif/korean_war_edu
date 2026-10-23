@@ -6,7 +6,6 @@ import io.github.crm08134gif.backend.TestcontainersConfiguration;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -25,5 +24,14 @@ public class FrontlineSnapshotLoaderTests {
             .query(LocalDate.class)
             .list();
         assertThat(dates).contains(LocalDate.of(1950, 6, 25));
+    }
+
+    @Test
+    void loadsTitleFromCsv(){
+        String title = jdbc.sql("SELECT title FROM frontline_snapshot WHERE snapshot_date = :date")
+            .param("date", LocalDate.of(1950, 6, 25))
+            .query(String.class)
+            .single();
+        assertThat(title).isEqualTo("개전");
     }
 }

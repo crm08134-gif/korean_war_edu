@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 record SnapshotResponse(
     LocalDate snapshotDate,
+    String title,
     String sourceMap,
     String note,
     @JsonRawValue String frontLine,

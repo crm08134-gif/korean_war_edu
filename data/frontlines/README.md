@@ -84,7 +84,7 @@ data/frontlines/
 - CMH 지도 목록: https://www.koreanwar.org/html/maps-army.html
 - 지도 이미지: 인터넷 아카이브의 CMH Pub 20-2 PDF에는 컬러 지도가 빠져 있다. 공간사 3권의 지도는 [Korean Service](https://www.koreanwaronline.com/history/)의 각 권 목차에서 볼 수 있다. 근거는 그 사이트가 아니라 원본 권과 지도 번호로 적는다.
 - 개전 스냅샷(1950-06-25)은 사료가 그날의 경계를 38선으로 기록하므로 위도 38°N을 쓴다 (아래 참고).
-- 정전 스냅샷의 군사분계선은 CMH 1953-07-27 지도로 그린다.
+- 정전 스냅샷(1953-07-27)은 *Truce Tent* 컬러 Map VIII "The Eighth Army Front Line, 27 July 1953"(유엔군 쪽 전선)으로 그린다. 군사분계선 자체는 같은 권 컬러 Map IX "The Demarcation Line, 27 July 1953"에 있다.
 
 ## 개전 스냅샷(1950-06-25)
 

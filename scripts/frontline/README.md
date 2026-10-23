@@ -14,7 +14,7 @@ python3 scripts/frontline/frontline_tool.py <명령> -h
 | `trace` | 전선 꼭짓점(픽셀)을 경위도로 옮기고 정리한다 (서→동, 끝점을 해안선에, 0.01° 간격) | `<날짜>.front_line.geojson` |
 | `area` | 추가 영역(고립 지역·교두보)의 꼭짓점 고리(`part,u,v`)를 다각형으로 만들고 육지로 자른다 | `<날짜>.extra_areas.geojson` |
 | `preview` | 추출한 선을 원본 지도 위에 다시 겹치고, 양측(북 빨강·남 파랑) 지도를 그린다. 추가 영역은 둘러싼 쪽의 반대 색 | PNG 두 장, 양측 면적 |
-| `validate` | V1 마이그레이션으로 만든 DB에 `snapshots.csv`와 도형 파일을 모두 넣어 본다 | 끝점·교차·CSV 대응 검사 |
+| `validate` | 백엔드 마이그레이션(`V1`, `V2` …)을 모두 적용한 DB에 `snapshots.csv`와 도형 파일을 모두 넣어 본다 | 끝점·교차·CSV 대응 검사 |
 
 ## 순서
 

@@ -4,6 +4,7 @@ export type Position = [number, number];
 
 export type Snapshot = {
   snapshotDate: string; // YYYY-MM-DD
+  title: string; // 그 시점을 부르는 사건 이름 (예: 개전, 대전 함락)
   sourceMap: string;
   note: string | null;
   // 모든 스냅샷이 같은 점 개수(500), 서→동 순서다. 프론트는 i번째 점끼리 보간한다

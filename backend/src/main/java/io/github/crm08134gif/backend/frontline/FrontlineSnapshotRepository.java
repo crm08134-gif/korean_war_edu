@@ -9,6 +9,7 @@ public class FrontlineSnapshotRepository {
 
     private static final String FIND_ALL = """
             SELECT s.snapshot_date,
+                   s.title,
                    s.source_map,
                    s.note,
                    ST_AsGeoJSON(r.line, 6) AS front_line,

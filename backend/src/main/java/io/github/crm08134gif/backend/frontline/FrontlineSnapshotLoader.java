@@ -65,10 +65,13 @@ public class FrontlineSnapshotLoader implements ApplicationRunner{
                 .with(schema)
                 .<SnapshotCsvRow>readValues(in)
                 .readAll();
+            if (rows.isEmpty()) {
+                throw new IllegalStateException("snapshots.csv에 스냅샷이 하나도 없다");
+            }
             Set<LocalDate> seen = new HashSet<>();
             for (SnapshotCsvRow row : rows) {
-                if (row.snapshotDate() == null || row.sourceMap() == null) {
-                    throw new IllegalStateException("snapshots.csv에 날짜나 근거 지도에 빈 줄이 있다: " + row);
+                if (row.snapshotDate() == null || row.title() == null || row.sourceMap() == null) {
+                    throw new IllegalStateException("snapshots.csv에 날짜·이름·근거 지도 중 빈 칸이 있다: " + row);
                 }
                 if (!seen.add(row.snapshotDate())){
                     throw new IllegalStateException("snapshots.csv에 같은 날짜가 두 번 있다." + row.snapshotDate());
@@ -85,6 +88,7 @@ public class FrontlineSnapshotLoader implements ApplicationRunner{
         try{
             jdbc.sql(UPSERT)
                 .param("date", date)
+                .param("title", row.title())
                 .param("frontLine", frontLine)
                 .param("extraAreas", extraAreas)
                 .param("sourceMap", row.sourceMap())
@@ -114,9 +118,10 @@ public class FrontlineSnapshotLoader implements ApplicationRunner{
     }
 
     private static final String UPSERT = """
-            INSERT INTO frontline_snapshot (snapshot_date, front_line, extra_areas, source_map, note)
+            INSERT INTO frontline_snapshot (snapshot_date, title, front_line, extra_areas, source_map, note)
             VALUES (
                 :date,
+                :title,
                 (SELECT ST_GeomFromGeoJSON(f -> 'geometry')
                    FROM jsonb_array_elements(CAST(:frontLine AS jsonb) -> 'features') AS f),
                 (SELECT ST_Multi(ST_Collect(ST_GeomFromGeoJSON(f -> 'geometry')))
@@ -125,6 +130,7 @@ public class FrontlineSnapshotLoader implements ApplicationRunner{
                 :note
             )
             ON CONFLICT (snapshot_date) DO UPDATE SET
+                title = EXCLUDED.title,
                 front_line = EXCLUDED.front_line,
                 extra_areas = EXCLUDED.extra_areas,
                 source_map = EXCLUDED.source_map,

@@ -47,6 +47,8 @@ export default function WarMapApp() {
           <h1 className="font-serif text-[26px] font-semibold tracking-tight tabular-nums">
             {current ? formatDate(current.snapshotDate) : " "}
           </h1>
+          {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
+          <p className="text-lg font-semibold">{current ? current.title : " "}</p>
         </div>
         {current && (
           <div className="mt-0.5 rounded-full border border-rule bg-white px-3 py-1.5 text-[13px] font-medium tabular-nums">
@@ -81,13 +83,13 @@ export default function WarMapApp() {
           <div className="grid grid-cols-2 gap-3">
             <StepButton
               direction="prev"
-              label={index > 0 ? formatDate(snapshots[index - 1].snapshotDate) : "처음입니다"}
+              label={index > 0 ? snapshots[index - 1].title : "처음입니다"}
               disabled={index === 0}
               onClick={() => setIndex(index - 1)}
             />
             <StepButton
               direction="next"
-              label={index < last ? formatDate(snapshots[index + 1].snapshotDate) : "마지막입니다"}
+              label={index < last ? snapshots[index + 1].title : "마지막입니다"}
               disabled={index === last}
               onClick={() => setIndex(index + 1)}
             />

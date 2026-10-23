@@ -3,3 +3,4 @@ pillow>=10.0
 shapely>=2.0
 scipy>=1.11
 opencv-python-headless>=4.8
+scikit-image>=0.24

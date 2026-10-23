@@ -86,6 +86,7 @@ data/frontlines/
 - 지도 이미지: 인터넷 아카이브의 CMH Pub 20-2 PDF에는 컬러 지도가 빠져 있다. 공간사 3권의 지도는 [Korean Service](https://www.koreanwaronline.com/history/)의 각 권 목차에서 볼 수 있다. 근거는 그 사이트가 아니라 원본 권과 지도 번호로 적는다.
 - 개전 스냅샷(1950-06-25)은 사료가 그날의 경계를 38선으로 기록하므로 위도 38°N을 쓴다 (아래 참고).
 - 낙동강 방어선 스냅샷(1950-08-04)은 *South to the Naktong* 컬러 Map IV "The Pusan Perimeter, 4 August 1950"으로 그린다. 지도에 선이 없는 마산 쪽과 영덕 앞은 같은 지도의 부대 위치와 본문(15장)으로 이었다(`snapshots.csv` note).
+- 최대 북진 스냅샷(1950-11-23)은 *Ebb and Flow* Map 3 "The Battlefront, 23 November 1950"으로 그린다. 지도에 그려진 선이 다섯 조각이라 사이를 직선으로 이었고, 북한 전체를 담은 작은 축척 지도라 정밀도는 약 2 km다(`snapshots.csv` note).
 - 정전 스냅샷(1953-07-27)은 *Truce Tent* 컬러 Map VIII "The Eighth Army Front Line, 27 July 1953"(유엔군 쪽 전선)으로 그린다. 군사분계선 자체는 같은 권 컬러 Map IX "The Demarcation Line, 27 July 1953"에 있다.
 
 ## 개전 스냅샷(1950-06-25)

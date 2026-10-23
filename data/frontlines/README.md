@@ -90,6 +90,7 @@ data/frontlines/
 - 서울 수복 스냅샷(1950-09-30)은 같은 책 컬러 Map VIII "The Pursuit, 23-30 September 1950"으로 그린다. 9월 28일 선이 없어 9월 30일로 했고, 10군단 선과 8군 진격 화살표 끝을 이었다. 우회된 북한군 지역 두 곳은 추가 영역이다(`snapshots.csv` note).
 - 최대 북진 스냅샷(1950-11-23)은 *Ebb and Flow* Map 3 "The Battlefront, 23 November 1950"으로 그린다. 지도에 그려진 선이 다섯 조각이라 사이를 직선으로 이었고, 북한 전체를 담은 작은 축척 지도라 정밀도는 약 2 km다(`snapshots.csv` note).
 - 1·4 후퇴 스냅샷(1951-01-07)은 *Ebb and Flow* Map 16(서부, 1·9군단)과 Map 17(중동부, 10군단)을 이어 그린다. 동쪽 끝 구간은 D선을 따랐다(`snapshots.csv` note).
+- 정전회담 직전 접촉선 스냅샷(1951-07-01)은 *Truce Tent* 컬러 Map I "The Line of Contact, 1 July 1951"로 그린다. 접힌 지도 사진이라 동부 오차가 크다(`snapshots.csv` note).
 - 정전 스냅샷(1953-07-27)은 *Truce Tent* 컬러 Map VIII "The Eighth Army Front Line, 27 July 1953"(유엔군 쪽 전선)으로 그린다. 군사분계선 자체는 같은 권 컬러 Map IX "The Demarcation Line, 27 July 1953"에 있다.
 
 ## 개전 스냅샷(1950-06-25)

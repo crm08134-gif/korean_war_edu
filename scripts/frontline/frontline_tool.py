@@ -7,12 +7,14 @@ Natural Earth 같은 데이터에서, 전선의 픽셀 위치는 지도 이미�
 
   sheet     확대 격자 그림 (픽셀 위치를 읽기 위한 것)
   fit       기준점(픽셀 ↔ 경위도)으로 이미지 → 경위도 변환을 맞추고 오차를 보고
+  route     경유점 사이를 지도에 그려진 전선 색 픽셀을 따라 자동으로 이어 꼭짓점 CSV를 만든다
   trace     전선 꼭짓점(픽셀)을 경위도로 옮겨 정리하고 GeoJSON으로 저장
   area      추가 영역(고립 지역·교두보) 꼭짓점 고리를 다각형으로 저장
+  sides     화면이 전선 양 끝을 정서·정동으로 늘려 칠할 때 반대쪽 색이 되는 육지를 추가 영역으로 저장
   preview   추출한 선을 원본 지도 위에 다시 겹친 그림, 양측(북 빨강·남 파랑) 지도
   validate  백엔드 마이그레이션(V1, V2 …)을 모두 적용한 DB에 snapshots.csv와 도형 파일을 넣어 검증
 
-필요: python3, numpy, pillow, shapely, opencv-python-headless, GDAL(ogr2ogr), PostgreSQL+PostGIS(validate)
+필요: python3, numpy, pillow, shapely, scipy, opencv-python-headless, scikit-image(route), GDAL(ogr2ogr), PostgreSQL+PostGIS(validate)
 """
 import argparse
 import csv
@@ -51,6 +53,42 @@ def to_km(lon, lat):
 
 def from_km(x, y):
     return np.asarray(x) / KM_LON + LON0, np.asarray(y) / KM_LAT + LAT0
+
+
+# 이미지 ↔ 경위도 변환에 쓰는 평면 좌표. fit이 고르고 fit.json의 'proj'에 남긴다.
+#   tm:       기준점 가운데를 중심으로 한 횡메르카토르(구면). 지도처럼 각이 보존되는 투영이라
+#             위도 폭이 넓은 지도(북한 전체 등)에서도 affine 하나로 잘 맞는다.
+#   equirect: 38°N 고정 환산(to_km). 'proj'가 없는 예전 fit.json은 이것으로 읽는다.
+R_KM = 6371.0088
+
+
+def tm_fwd(lon, lat, lon0, lat0):
+    lam = np.radians(np.asarray(lon, float) - lon0)
+    phi = np.radians(np.asarray(lat, float))
+    b = np.cos(phi) * np.sin(lam)
+    return R_KM * np.arctanh(b), R_KM * (np.arctan2(np.tan(phi), np.cos(lam)) - math.radians(lat0))
+
+
+def tm_inv(x, y, lon0, lat0):
+    d = np.asarray(y, float) / R_KM + math.radians(lat0)
+    xr = np.asarray(x, float) / R_KM
+    return lon0 + np.degrees(np.arctan2(np.sinh(xr), np.cos(d))), np.degrees(np.arcsin(np.sin(d) / np.cosh(xr)))
+
+
+def proj_of(fit):
+    return fit.get('proj') or {'type': 'equirect'}
+
+
+def proj_fwd(proj, lon, lat):
+    if proj['type'] == 'tm':
+        return tm_fwd(lon, lat, proj['lon0'], proj['lat0'])
+    return to_km(lon, lat)
+
+
+def proj_inv(proj, x, y):
+    if proj['type'] == 'tm':
+        return tm_inv(x, y, proj['lon0'], proj['lat0'])
+    return from_km(x, y)
 
 
 def load_outline(path):
@@ -130,7 +168,10 @@ def apply(H, u, v):
 def cmd_fit(a):
     g = read_gcps(a.gcps)
     uv = np.array([[r['u'], r['v']] for r in g])
-    xy = np.column_stack(to_km([r['lon'] for r in g], [r['lat'] for r in g]))
+    lons, lats = [r['lon'] for r in g], [r['lat'] for r in g]
+    proj = ({'type': 'tm', 'lon0': round(float(np.mean(lons)), 1), 'lat0': round(float(np.mean(lats)), 1)}
+            if a.proj == 'tm' else {'type': 'equirect', 'origin_lonlat': [LON0, LAT0]})
+    xy = np.column_stack(proj_fwd(proj, lons, lats))
     need = 3 if a.model == 'affine' else 4
     if len(g) < need + 2:
         sys.exit(f'기준점이 {len(g)}개뿐이다. {a.model}에는 최소 {need + 2}개가 필요하다 (오차 검사용 여유 2개 포함).')
@@ -149,16 +190,16 @@ def cmd_fit(a):
     km_per_px = float(np.hypot(cx[1] - cx[0], cy[1] - cy[0]))
     report = {
         'image': os.path.basename(a.image), 'image_size': [w, h], 'model': a.model,
-        'matrix_px_to_km': H.tolist(), 'origin_lonlat': [LON0, LAT0],
+        'matrix_px_to_km': H.tolist(), 'proj': proj,
         'km_per_px': round(km_per_px, 3),
         'rms_km': round(float(np.sqrt(np.mean(res ** 2))), 2),
         'loo_rms_km': round(float(np.sqrt(np.mean(np.square(loo)))), 2),
         'points': [{'name': r['name'], 'u': r['u'], 'v': r['v'], 'res_km': round(float(e), 2), 'loo_km': round(l, 2)}
                    for r, e, l in zip(g, res, loo)],
-        'corners_lonlat': [[round(float(x), 4), round(float(y), 4)] for x, y in zip(*from_km(*corners))],
+        'corners_lonlat': [[round(float(x), 4), round(float(y), 4)] for x, y in zip(*proj_inv(proj, *corners))],
     }
     if a.outline and a.sea_rgb:
-        report['coast_check'] = coast_check(a, H)
+        report['coast_check'] = coast_check(a, H, proj)
     with open(a.out, 'w', encoding='utf-8') as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
     print(json.dumps({k: v for k, v in report.items() if k != 'matrix_px_to_km'}, ensure_ascii=False, indent=1))
@@ -176,7 +217,7 @@ def cmd_fit(a):
     print('판정:', '통과' if not fails else '미달 - ' + '; '.join(fails))
 
 
-def coast_check(a, H):
+def coast_check(a, H, proj):
     """지도에서 바다색 영역의 경계를 경위도로 옮겨 외곽선 해안선과의 거리를 잰다."""
     import cv2
     img = np.asarray(load_rgb(a.image)).astype(int)
@@ -191,13 +232,128 @@ def coast_check(a, H):
     v, u = np.nonzero(edge)
     if len(u) == 0:
         return {'n': 0}
-    lon, lat = from_km(*apply(H, u, v))
+    lon, lat = proj_inv(proj, *apply(H, u, v))
     coast = load_outline(a.outline).boundary
     pts = np.array(coast.coords) if coast.geom_type == 'LineString' else np.vstack([np.array(l.coords) for l in coast.geoms])
     from scipy.spatial import cKDTree
-    tree = cKDTree(np.column_stack(to_km(pts[:, 0], pts[:, 1])))
-    d, _ = tree.query(np.column_stack(to_km(lon, lat)))
+    tree = cKDTree(np.column_stack(proj_fwd(proj, pts[:, 0], pts[:, 1])))
+    d, _ = tree.query(np.column_stack(proj_fwd(proj, lon, lat)))
     return {'n': int(len(d)), 'median_km': round(float(np.median(d)), 2), 'p90_km': round(float(np.percentile(d, 90)), 2)}
+
+
+# ---------------------------------------------------------------- route
+def line_mask(img, colors, tol):
+    """전선 색(여러 개 줄 수 있음) 중 하나와 R·G·B 차이의 합이 tol 이하인 픽셀."""
+    img = img.astype(int)
+    mask = np.zeros(img.shape[:2], bool)
+    for c in colors:
+        mask |= np.abs(img - c).sum(axis=2) <= tol
+    return mask
+
+
+def gaps_on(path, mask):
+    """경로가 전선 색 밖을 지나는 구간(틈). (길이 px, 가운데 u, v)를 긴 순서로."""
+    on = mask[path[:, 1], path[:, 0]]
+    out, i = [], 0
+    while i < len(path):
+        if on[i]:
+            i += 1
+            continue
+        j = i
+        while j + 1 < len(path) and not on[j + 1]:
+            j += 1
+        p, q = path[max(i - 1, 0)], path[min(j + 1, len(path) - 1)]   # 틈 앞뒤의 전선 픽셀
+        mid = path[(i + j) // 2]
+        out.append((float(np.hypot(*(q - p))), int(mid[0]), int(mid[1])))
+        i = j + 1
+    return sorted(out, reverse=True)
+
+
+def cmd_route(a):
+    """경유점 사이를 전선 색 픽셀 위의 최소 비용 경로로 잇는다.
+
+    비용은 전선 색 픽셀 안에서 1 + 3/(획 가장자리까지 거리)라 획 가운데를 따라가고, 밖에서는 --gap-cost라
+    강·글자로 끊긴 짧은 틈은 건너가되 먼 길로 돌아가지 않는다. 같은 색이라도 막다른 가지(군단 경계 등)는
+    경유점 사이 경로에 들어가지 않는다. 날짜가 다른 선이 같은 색으로 붙어 있으면 경유점을 더 찍거나
+    join=line(손으로 읽은 직선 구간)을 쓴다.
+    """
+    from scipy.ndimage import distance_transform_edt
+    from skimage.graph import route_through_array
+    from skimage.measure import approximate_polygon
+    img = np.asarray(load_rgb(a.image))
+    h, w = img.shape[:2]
+    mask = line_mask(img, [np.array([int(c) for c in s.split(',')]) for s in a.line_rgb], a.rgb_tol)
+    if not mask.any():
+        sys.exit('전선 색 픽셀이 하나도 없다. --line-rgb와 --rgb-tol을 확인할 것.')
+    cost = np.where(mask, 1.0 + 3.0 / np.maximum(distance_transform_edt(mask), 1.0), a.gap_cost)
+    for box in a.block or []:
+        x0, y0, x1, y1 = map(int, box.split(','))
+        cost[max(y0, 0):y1, max(x0, 0):x1] = np.inf          # 지나갈 수 없음 (범례, 다른 날짜 선 등)
+    to_line = distance_transform_edt(~mask)                  # 각 픽셀에서 가장 가까운 전선 색 픽셀까지 거리
+    with open(a.waypoints, encoding='utf-8') as f:
+        wps = [(float(r['u']), float(r['v']), (r.get('join') or 'route').strip()) for r in csv.DictReader(f)]
+    if len(wps) < 2:
+        sys.exit('경유점이 2개 이상 있어야 한다.')
+    kpp = read_json(a.fit)['km_per_px'] if a.fit else None
+
+    def size(px):
+        return f'{px:.0f}px' + (f' ({px * kpp:.2f}km)' if kpp else '')
+    idx = []
+    for n, (u, v, join) in enumerate(wps, 1):
+        if join not in ('route', 'line'):
+            sys.exit(f'경유점 {n}: join은 route 또는 line이다 ({join!r}).')
+        if not (0 <= u < w and 0 <= v < h):
+            sys.exit(f'경유점 {n} ({u}, {v})이 이미지 밖이다 ({w}x{h}).')
+        iu, iv = int(u), int(v)
+        if not np.isfinite(cost[iv, iu]):
+            sys.exit(f'경유점 {n} ({u}, {v})이 --block 상자 안에 있다.')
+        idx.append((iu, iv))
+        d = float(to_line[iv, iu])
+        note = '' if d <= 3 or n in (1, len(wps)) else '  ← 전선 색에서 떨어져 있다. 위치나 색을 확인할 것'
+        print(f'경유점 {n} ({u:g}, {v:g}): 가장 가까운 전선 색까지 {size(d)}{note}')
+    verts, all_gaps = [wps[0][:2]], []
+    for n in range(1, len(wps)):
+        (u0, v0, _), (u1, v1, join) = wps[n - 1], wps[n]
+        if join == 'line':
+            verts.append((u1, v1))
+            print(f'구간 {n}: 직선 (손으로 읽음)')
+            continue
+        (iu0, iv0), (iu1, iv1) = idx[n - 1], idx[n]
+        try:
+            rc, _ = route_through_array(cost, (iv0, iu0), (iv1, iu1), fully_connected=True, geometric=True)
+        except ValueError:
+            sys.exit(f'구간 {n}: 경로를 찾지 못했다 (--block 상자가 길을 막았는지 확인할 것).')
+        path = np.array([(c, r) for r, c in rc])
+        pts = path + 0.5                                      # 픽셀 번호 → 픽셀 가운데 (sheet 격자와 같은 좌표)
+        pts[0], pts[-1] = (u0, v0), (u1, v1)                  # 경유점은 읽은 값 그대로 둔다
+        pts = approximate_polygon(pts, tolerance=a.simplify)
+        verts.extend(map(tuple, pts[1:]))
+        gaps = gaps_on(path, mask)
+        all_gaps += gaps
+        on = mask[path[:, 1], path[:, 0]].mean()
+        longest = f', 가장 긴 틈 {size(gaps[0][0])} ({gaps[0][1]}, {gaps[0][2]})' if gaps else ''
+        print(f'구간 {n}: 경로 {len(path)}px → 꼭짓점 {len(pts) - 1}개, 전선 색 위 {on:.0%}{longest}')
+    with open(a.out, 'w', encoding='utf-8', newline='') as f:
+        f.write('u,v\n' + ''.join(f'{u:.1f},{v:.1f}\n' for u, v in verts))
+    print(f'{a.out}: 꼭짓점 {len(verts)}개')
+    big = [g for g in all_gaps if g[0] > a.warn_gap]
+    if big:
+        print(f'{a.warn_gap:g}px 넘는 틈 {len(big)}곳 (--check 그림에서 확인할 것): ' +
+              ', '.join(f'({u}, {v}) {size(L)}' for L, u, v in big[:10]))
+    if a.check:                                               # 원본을 흐리게 깔고 전선 색 픽셀·경로·경유점·틈을 그린다
+        base = Image.blend(Image.fromarray(img), Image.new('RGB', (w, h), 'white'), 0.6)
+        arr = np.asarray(base).copy()
+        arr[mask] = (0, 170, 255)
+        im = Image.fromarray(arr)
+        d = ImageDraw.Draw(im)
+        d.line([tuple(p) for p in verts], fill=(255, 0, 200), width=2)
+        for u, v, _ in wps:
+            d.ellipse([u - 6, v - 6, u + 6, v + 6], outline=(0, 150, 0), width=2)
+        for L, u, v in big:
+            r = max(8, L / 2)
+            d.ellipse([u - r, v - r, u + r, v + r], outline=(255, 120, 0), width=2)
+        im.save(a.check)
+        print(f'{a.check}: 하늘색 = 전선 색 픽셀, 분홍 = 경로, 초록 = 경유점, 주황 = {a.warn_gap:g}px 넘는 틈')
 
 
 # ---------------------------------------------------------------- trace
@@ -227,7 +383,7 @@ def cmd_trace(a):
     if a.snap_rgb:
         img = np.asarray(load_rgb(a.image))
         uv = snap_to_color(img, uv[:, 0], uv[:, 1], np.array([int(c) for c in a.snap_rgb.split(',')]), a.snap_tol, a.snap_radius)
-    lon, lat = from_km(*apply(H, uv[:, 0], uv[:, 1]))
+    lon, lat = proj_inv(proj_of(fit), *apply(H, uv[:, 0], uv[:, 1]))
     line = LineString(np.column_stack([lon, lat]))
     if line.coords[0][0] > line.coords[-1][0]:
         line = LineString(list(line.coords)[::-1])          # 서→동
@@ -277,7 +433,7 @@ def cmd_area(a):
     polys = []
     for name, pts in parts.items():
         uv = np.array(pts)
-        lon, lat = from_km(*apply(H, uv[:, 0], uv[:, 1]))
+        lon, lat = proj_inv(proj_of(fit), *apply(H, uv[:, 0], uv[:, 1]))
         poly = Polygon(np.column_stack([lon, lat])).buffer(0).intersection(land)
         for p in getattr(poly, 'geoms', [poly]):
             if p.geom_type == 'Polygon' and not p.is_empty:
@@ -289,6 +445,132 @@ def cmd_area(a):
     union_area = area_km2(MultiPolygon(polys).buffer(0))
     if abs(union_area - sum(area_km2(p) for p in polys)) > 1:
         sys.exit('추가 영역끼리 겹친다. 꼭짓점을 확인할 것.')
+    write_geojson(polys, a.out)
+    print(f'{a.out}: 다각형 {len(polys)}개')
+
+
+# ---------------------------------------------------------------- sides
+FRAME = (110.0, 25.0, 150.0, 50.0)   # frontend/src/lib/geometry.ts의 FRAME (서, 남, 동, 북)
+
+
+def screen_north(line):
+    """화면(splitFrame)이 북측으로 칠하는 범위: 전선 양 끝을 틀 끝까지 정서·정동으로 늘린 선의 위쪽."""
+    w, s, e, n = FRAME
+    c = list(line.coords)
+    return Polygon([(w, c[0][1])] + c + [(e, c[-1][1]), (e, n), (w, n)]).buffer(0)
+
+
+def extend_ends(line, km):
+    """끝점을 끝 구간 방향으로 km만큼 늘린다 (해안선을 확실히 넘어 육지를 자르도록)."""
+    c = np.array(line.coords)
+
+    def ray(p, toward):
+        for q in toward:                                    # 1km 넘게 떨어진 첫 점으로 방향을 잡는다
+            if math.hypot((p[0] - q[0]) * KM_LON, (p[1] - q[1]) * KM_LAT) > 1:
+                break
+        d = np.array([(p[0] - q[0]) * KM_LON, (p[1] - q[1]) * KM_LAT])
+        d = d / np.linalg.norm(d) * km
+        return (p[0] + d[0] / KM_LON, p[1] + d[1] / KM_LAT)
+    return LineString([ray(c[0], c[1:])] + [tuple(p) for p in c] + [ray(c[-1], c[-2::-1])])
+
+
+def start_inside(poly, edges):
+    """고리의 첫 꼭짓점을 경계(전선·연장선)에서 가장 먼 꼭짓점으로 옮긴다.
+    화면은 첫 꼭짓점으로 추가 영역이 어느 쪽 안에 있는지 판정하므로, 경계 위의 점으로 시작하면 판정이 흔들린다."""
+    ring = list(poly.exterior.coords)[:-1]
+    k = int(np.argmax([edges.distance(Point(p)) for p in ring]))
+    ring = ring[k:] + ring[:k]
+    return Polygon(ring + [ring[0]], [i.coords for i in poly.interiors])
+
+
+def cmd_sides(a):
+    """화면이 반대쪽 색으로 칠하는 육지를 찾아 추가 영역으로 만든다.
+
+    화면은 전선 양 끝을 정서·정동으로 늘려 양측을 나누므로, 늘린 선이 지나가는 육지(서쪽 끝이 남해안일 때의
+    남서 해안, 서해안 하구에서 끝날 때 하구 건너편 해안 등)가 반대쪽 색이 된다. 본토를 전선만으로 나눈 조각마다
+    전선에 길게 맞닿은 쪽이 맞는 색이고, 늘린 선 때문에 떨어져 나간 부분이 잘못 칠해지는 곳이다.
+    섬은 --islands-km 안에 있는 땅(본토 조각이나 이미 정한 섬)의 색을 따른다. 가까운 섬부터 섬에서 섬으로 이어 가며 정한다.
+    그 거리 안에 양쪽 땅이 다 있으면(예: 낙동강 방어선 때 거제도) 정하지 않고 화면 그대로 두고,
+    어느 땅에서도 그보다 먼 섬(예: 개전 때 백령도)도 화면 그대로 둔다. 사료로 확인되는 섬은 area로 따로 그린다.
+    """
+    from shapely.ops import split
+    line = shape(read_json(a.line)['features'][0]['geometry'])
+    land = load_outline(a.outline)
+    parts = sorted(land.geoms, key=lambda p: p.area, reverse=True)
+    main, islands = parts[0], parts[1:]
+    north = screen_north(line)
+    w, s, e, n = FRAME
+    c = list(line.coords)
+    edges = LineString([(w, c[0][1])] + c + [(e, c[-1][1])])
+    cut = extend_ends(line, a.extend_km)
+    touch = line.buffer(1e-5)
+
+    def polys_of(g):                                         # 교차 결과에서 다각형만 (점·선 조각은 버린다)
+        return [q for q in getattr(g, 'geoms', [g]) if q.geom_type == 'Polygon' and not q.is_empty]
+
+    def contact(g):                                          # 전선에 맞닿은 길이
+        return sum(q.boundary.intersection(touch).length for q in polys_of(g))
+
+    def side_of(piece):                                      # 전선에 길게 맞닿은 쪽이 맞는 색
+        pn, ps = piece.intersection(north), piece.difference(north)
+        ln, ls = contact(pn), contact(ps)
+        if ln == ls == 0:                                    # 전선에 닿지 않는 조각은 넓은 쪽을 따른다
+            return 'north' if pn.area >= ps.area else 'south'
+        return 'north' if ln >= ls else 'south'
+
+    def km(g):                                               # 거리 계산용 국지 km 좌표
+        import shapely
+        return shapely.transform(g, lambda xy: np.column_stack(to_km(xy[:, 0], xy[:, 1])))
+
+    pieces = [(p, side_of(p)) for p in split(main, cut).geoms if p.geom_type == 'Polygon']
+    print(f'본토를 전선으로 나눈 조각 {len(pieces)}개')
+    wrong = []                                               # (다각형, 맞는 색, 설명)
+    for p, side in pieces:
+        bad = p.difference(north) if side == 'north' else p.intersection(north)
+        wrong += [(g, side, '본토') for g in polys_of(bad)]
+    known = [(km(p), side) for p, side in pieces]            # 섬은 가까운 땅부터 차례로 정한다
+    todo = [(isl, km(isl)) for isl in islands]
+    unsure = 0
+    while todo:
+        best = None
+        for i, (isl, k) in enumerate(todo):
+            d = min(g.distance(k) for g, _ in known)
+            if d <= a.islands_km and (best is None or d < best[0]):
+                best = (d, i)
+        if best is None:
+            break
+        d, i = best
+        isl, k = todo.pop(i)
+        sides = {side for g, side in known if g.distance(k) <= a.islands_km}
+        if len(sides) > 1:                                   # 양쪽 땅이 다 가까우면 정하지 않고 화면 그대로 둔다
+            unsure += 1
+            print(f'  섬 {area_km2(isl):,.1f}km² ({isl.representative_point().x:.2f}, {isl.representative_point().y:.2f}): '
+                  f'양쪽 땅이 {a.islands_km:g}km 안에 있어 화면 그대로')
+            continue
+        side = sides.pop()
+        known.append((k, side))
+        bad = isl.difference(north) if side == 'north' else isl.intersection(north)
+        wrong += [(g, side, f'섬 {d:.0f}km') for g in polys_of(bad)]
+    out = []
+    for g, side, what in sorted(wrong, key=lambda t: -area_km2(t[0])):
+        km2 = area_km2(g)
+        if km2 < a.min_km2:
+            continue
+        g = Polygon(g.exterior.coords, [i.coords for i in g.interiors]).segmentize(0.01)
+        g = Polygon([(round(x, 6), round(y, 6)) for x, y in g.exterior.coords],
+                    [[(round(x, 6), round(y, 6)) for x, y in i.coords] for i in g.interiors])
+        out.append(start_inside(g, edges))
+        print(f'  {what}: {km2:,.1f}km² → {"북측" if side == "north" else "남측"} 색')
+    print(f'보정 영역 {len(out)}개, 합계 {sum(area_km2(g) for g in out):,.1f}km² (작은 조각 {a.min_km2}km² 미만은 뺌)')
+    polys = list(out)
+    if a.areas:                                              # area로 그린 고립 지역·교두보와 합친다
+        polys = [shape(f['geometry']) for f in read_json(a.areas)['features']] + polys
+    union_area = area_km2(MultiPolygon(polys).buffer(0))
+    if abs(union_area - sum(area_km2(p) for p in polys)) > 1:
+        sys.exit('추가 영역끼리 겹친다. --areas의 다각형과 보정 영역을 확인할 것.')
+    if not polys:
+        print('잘못 칠해지는 육지가 없다. 추가 영역 파일을 만들지 않는다.')
+        return
     write_geojson(polys, a.out)
     print(f'{a.out}: 다각형 {len(polys)}개')
 
@@ -323,7 +605,7 @@ def cmd_preview(a):
         scale = max(1, 1600 // img.width)
         img = img.resize((img.width * scale, img.height * scale), Image.LANCZOS)
         d = ImageDraw.Draw(img)
-        xs, ys = to_km(*np.array(line.coords).T)
+        xs, ys = proj_fwd(proj_of(fit), *np.array(line.coords).T)
         u, v = apply(Hinv, xs, ys)
         d.line(list(zip(u * scale, v * scale)), fill=(255, 0, 200), width=max(2, scale))
         for p in fit['points']:
@@ -447,16 +729,36 @@ def main():
     s.add_argument('--step', type=int, default=5); s.add_argument('--cols', type=int, default=3)
     s = sub.add_parser('fit'); s.add_argument('image'); s.add_argument('gcps', help='CSV: name,u,v,lon,lat')
     s.add_argument('out'); s.add_argument('--model', choices=['affine', 'homography'], default='affine')
+    s.add_argument('--proj', choices=['tm', 'equirect'], default='tm',
+                   help='경위도를 바꿀 평면: tm(기준점 가운데 중심 횡메르카토르, 기본) 또는 equirect(38°N 고정 환산, 예전 방식)')
     s.add_argument('--tol-km', type=float, default=1.5); s.add_argument('--max-km-per-px', type=float, default=0.5)
     s.add_argument('--outline', default=DEFAULT_OUTLINE)
     s.add_argument('--sea-rgb', help='해안선 검사용 바다색 R,G,B'); s.add_argument('--sea-tol', type=int, default=40)
     s.add_argument('--exclude', nargs='*', help='해안선 검사에서 뺄 상자 x0,y0,x1,y1 (범례 등)')
+    s = sub.add_parser('route'); s.add_argument('image')
+    s.add_argument('waypoints', help='CSV: u,v[,join] 서→동 순서. join=route(기본, 전선 색을 따라감) 또는 line(앞 점과 직선)')
+    s.add_argument('out', help='꼭짓점 CSV (u,v) → trace에 넣는다')
+    s.add_argument('--line-rgb', nargs='+', required=True, help='전선 색 R,G,B (여러 개 주면 그중 하나에 가까우면 전선)')
+    s.add_argument('--rgb-tol', type=int, default=60, help='R·G·B 차이 합의 허용치')
+    s.add_argument('--gap-cost', type=float, default=30.0, help='전선 색 밖 한 픽셀의 비용 (안은 1~4)')
+    s.add_argument('--simplify', type=float, default=0.8, help='꼭짓점 줄이기 허용 오차 px')
+    s.add_argument('--block', nargs='*', help='지나가지 못하게 할 상자 x0,y0,x1,y1 (범례, 다른 날짜의 선 등)')
+    s.add_argument('--warn-gap', type=float, default=15.0, help='이 길이(px)를 넘는 틈은 따로 알린다')
+    s.add_argument('--fit', help='fit 결과 JSON (길이를 km로도 보여 준다)')
+    s.add_argument('--check', help='확인 그림 PNG')
     s = sub.add_parser('trace'); s.add_argument('image'); s.add_argument('fit'); s.add_argument('vertices', help='CSV: u,v (서→동 순서 권장)')
     s.add_argument('out', help='<날짜>.front_line.geojson'); s.add_argument('--outline', default=DEFAULT_OUTLINE)
     s.add_argument('--snap-km', type=float, default=3.0); s.add_argument('--snap-rgb', help='전선 색 R,G,B')
     s.add_argument('--snap-tol', type=int, default=60); s.add_argument('--snap-radius', type=int, default=4)
     s = sub.add_parser('area'); s.add_argument('fit'); s.add_argument('vertices', help='CSV: part,u,v (part마다 고리 하나)')
     s.add_argument('out', help='<날짜>.extra_areas.geojson'); s.add_argument('--outline', default=DEFAULT_OUTLINE)
+    s = sub.add_parser('sides'); s.add_argument('line', help='<날짜>.front_line.geojson')
+    s.add_argument('out', help='<날짜>.extra_areas.geojson (보정 영역 + --areas)')
+    s.add_argument('--areas', help='area로 만든 고립 지역·교두보 파일 (함께 넣는다)')
+    s.add_argument('--islands-km', type=float, default=10.0, help='이 거리(km) 안의 섬은 가장 가까운 땅의 색을 따른다')
+    s.add_argument('--min-km2', type=float, default=0.5, help='이보다 작은 조각은 뺀다')
+    s.add_argument('--extend-km', type=float, default=2.0, help='본토를 자를 때 전선 끝을 늘리는 길이')
+    s.add_argument('--outline', default=DEFAULT_OUTLINE)
     s = sub.add_parser('preview'); s.add_argument('line'); s.add_argument('prefix')
     s.add_argument('--image'); s.add_argument('--fit'); s.add_argument('--previous', help='직전 스냅샷 front_line 파일')
     s.add_argument('--areas', help='같은 날짜의 extra_areas 파일')
@@ -466,7 +768,7 @@ def main():
     s.add_argument('--outline', default=DEFAULT_OUTLINE); s.add_argument('--db', default='frontline_check')
     s.add_argument('--end-m', type=float, default=100.0)
     a = p.parse_args()
-    {'sheet': cmd_sheet, 'fit': cmd_fit, 'trace': cmd_trace, 'area': cmd_area, 'preview': cmd_preview, 'validate': cmd_validate}[a.cmd](a)
+    {'sheet': cmd_sheet, 'fit': cmd_fit, 'route': cmd_route, 'trace': cmd_trace, 'area': cmd_area, 'sides': cmd_sides, 'preview': cmd_preview, 'validate': cmd_validate}[a.cmd](a)
 
 
 if __name__ == '__main__':

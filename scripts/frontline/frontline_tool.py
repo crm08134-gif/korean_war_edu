@@ -384,7 +384,18 @@ def cmd_trace(a):
         img = np.asarray(load_rgb(a.image))
         uv = snap_to_color(img, uv[:, 0], uv[:, 1], np.array([int(c) for c in a.snap_rgb.split(',')]), a.snap_tol, a.snap_radius)
     lon, lat = proj_inv(proj_of(fit), *apply(H, uv[:, 0], uv[:, 1]))
-    line = LineString(np.column_stack([lon, lat]))
+    coords = list(zip(lon, lat))
+    for n, (fit2, verts2) in enumerate(a.add or [], 2):     # 다른 지도에서 읽은 다음 구간을 이어 붙인다
+        f2 = read_json(fit2)
+        with open(verts2, encoding='utf-8') as f:
+            uv2 = np.array([(float(r['u']), float(r['v'])) for r in csv.DictReader(f)])
+        lo2, la2 = proj_inv(proj_of(f2), *apply(np.array(f2['matrix_px_to_km']), uv2[:, 0], uv2[:, 1]))
+        gap = math.hypot((lo2[0] - coords[-1][0]) * KM_LON, (la2[0] - coords[-1][1]) * KM_LAT)
+        print(f'구간 {n} ({os.path.basename(verts2)}): 앞 구간 끝과 {gap:.2f}km 떨어져 있어 직선으로 잇는다')
+        if gap > a.join_km:
+            sys.exit(f'구간 {n}의 첫 점이 앞 구간 끝에서 {gap:.1f}km 떨어져 있다 (허용 {a.join_km}km). 두 지도에서 같은 곳을 이음점으로 읽을 것.')
+        coords += list(zip(lo2, la2))
+    line = LineString(coords)
     if line.coords[0][0] > line.coords[-1][0]:
         line = LineString(list(line.coords)[::-1])          # 서→동
     land = load_outline(a.outline)
@@ -750,6 +761,9 @@ def main():
     s.add_argument('out', help='<날짜>.front_line.geojson'); s.add_argument('--outline', default=DEFAULT_OUTLINE)
     s.add_argument('--snap-km', type=float, default=3.0); s.add_argument('--snap-rgb', help='전선 색 R,G,B')
     s.add_argument('--snap-tol', type=int, default=60); s.add_argument('--snap-radius', type=int, default=4)
+    s.add_argument('--add', nargs=2, action='append', metavar=('FIT', 'VERTICES'),
+                   help='다른 지도의 fit.json과 꼭짓점 CSV. 선이 여러 장에 나뉘었을 때 서→동 순서로 이어 붙인다 (여러 번 줄 수 있음)')
+    s.add_argument('--join-km', type=float, default=10.0, help='--add 구간의 첫 점과 앞 구간 끝 사이 허용 거리')
     s = sub.add_parser('area'); s.add_argument('fit'); s.add_argument('vertices', help='CSV: part,u,v (part마다 고리 하나)')
     s.add_argument('out', help='<날짜>.extra_areas.geojson'); s.add_argument('--outline', default=DEFAULT_OUTLINE)
     s = sub.add_parser('sides'); s.add_argument('line', help='<날짜>.front_line.geojson')

@@ -85,6 +85,8 @@ data/frontlines/
 - CMH 지도 목록: https://www.koreanwar.org/html/maps-army.html
 - 지도 이미지: 인터넷 아카이브의 CMH Pub 20-2 PDF에는 컬러 지도가 빠져 있다. 공간사 3권의 지도는 [Korean Service](https://www.koreanwaronline.com/history/)의 각 권 목차에서 볼 수 있다. 근거는 그 사이트가 아니라 원본 권과 지도 번호로 적는다.
 - 개전 스냅샷(1950-06-25)은 사료가 그날의 경계를 38선으로 기록하므로 위도 38°N을 쓴다 (아래 참고).
+- 서울 함락 스냅샷(1950-06-28)은 *South to the Naktong* Map 5에 그려진 "ROK Army front, evening, 28 June"(인천~홍천)을 따르고, 홍천 동쪽은 강릉 남쪽 해안까지 직선으로 이었다(`snapshots.csv` note).
+- 금강 방어선 스냅샷(1950-07-13)은 *South to the Naktong* Map 5 "The U.S.-ROK Front, 13 July 1950"의 부대 위치를 이어 그린다. 처음 계획한 대전 함락(7월 20일)은 전국 선이 있는 지도가 없어 날짜를 바꿨다(`snapshots.csv` note).
 - 낙동강 방어선 스냅샷(1950-08-04)은 *South to the Naktong* 컬러 Map IV "The Pusan Perimeter, 4 August 1950"으로 그린다. 지도에 선이 없는 마산 쪽과 영덕 앞은 같은 지도의 부대 위치와 본문(15장)으로 이었다(`snapshots.csv` note).
 - 인천상륙 스냅샷(1950-09-15)은 *South to the Naktong* Map 17 "Breaking the Cordon, 16-22 September 1950"의 9월 15일 저녁 선으로 그리고, 인천 교두보는 Map 16 "The Inch'on Landing, 15-16 September 1950"으로 추가 영역을 그린다.
 - 서울 수복 스냅샷(1950-09-30)은 같은 책 컬러 Map VIII "The Pursuit, 23-30 September 1950"으로 그린다. 9월 28일 선이 없어 9월 30일로 했고, 10군단 선과 8군 진격 화살표 끝을 이었다. 우회된 북한군 지역 두 곳은 추가 영역이다(`snapshots.csv` note).

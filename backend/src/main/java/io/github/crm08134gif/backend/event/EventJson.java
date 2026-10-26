@@ -10,6 +10,7 @@ record EventJson(
     String id,
     String title,
     LocalDate date,
+    LocalDate endDate, // 며칠 이어진 사건의 마지막 날. 하루짜리는 없다(null)
     String datePrecision,
     String placeName,
     Double lon,

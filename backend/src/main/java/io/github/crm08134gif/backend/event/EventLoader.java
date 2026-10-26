@@ -197,6 +197,7 @@ public class EventLoader implements ApplicationRunner {
             .param("id", e.id())
             .param("title", e.title())
             .param("date", e.date())
+            .param("endDate", e.endDate())
             .param("datePrecision", e.datePrecision())
             .param("placeName", e.placeName())
             .param("lon", e.lon())
@@ -249,9 +250,9 @@ public class EventLoader implements ApplicationRunner {
             """;
 
     private static final String INSERT_EVENT = """
-            INSERT INTO event (id, title, event_date, date_precision, place_name, geom,
+            INSERT INTO event (id, title, event_date, end_date, date_precision, place_name, geom,
                                kind, summary, photo_file, photo_caption, body, status)
-            VALUES (:id, :title, :date, :datePrecision, :placeName,
+            VALUES (:id, :title, :date, :endDate, :datePrecision, :placeName,
                     ST_SetSRID(ST_MakePoint(:lon, :lat), 4326),
                     :kind, :summary, :photoFile, :photoCaption, CAST(:body AS jsonb), :status)
             """;

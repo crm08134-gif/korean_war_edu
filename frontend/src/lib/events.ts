@@ -55,7 +55,8 @@ export type SourceRef = {
 export type WarEvent = {
   id: string;
   title: string;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD. 어느 스냅샷에 보일지는 이 시작일로 정한다
+  endDate: string | null; // 며칠 이어진 사건의 마지막 날
   datePrecision: "day" | "month";
   placeName: string;
   lon: number;
@@ -83,11 +84,17 @@ export function eventsBetween(events: WarEvent[], from: string | null, to: strin
   return events.filter((event) => event.date <= to && (from === null || event.date > from));
 }
 
-// 날짜 정밀도에 맞춘 표기: "1950. 6. 25." 또는 "1950년 8월"
+// 날짜 정밀도에 맞춘 표기: "1950. 6. 25.", "1950년 8월", 기간이면 "1950. 8. 13.~8. 30."
 export function formatEventDate(event: WarEvent): string {
   if (event.datePrecision === "month") {
     const [y, m] = event.date.split("-").map(Number);
     return `${y}년 ${m}월`;
   }
-  return formatDate(event.date);
+  if (!event.endDate) {
+    return formatDate(event.date);
+  }
+  // 끝나는 해가 같으면 끝 날짜의 연도는 뺀다
+  const sameYear = event.endDate.slice(0, 4) === event.date.slice(0, 4);
+  const [, m, d] = event.endDate.split("-").map(Number);
+  return `${formatDate(event.date)}~${sameYear ? `${m}. ${d}.` : formatDate(event.endDate)}`;
 }

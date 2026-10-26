@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import KindIcon from "@/components/KindIcon";
+import { KIND_LABEL } from "@/lib/event-kinds";
 import { formatEventDate, type Block, type SourceRef, type TableBlock, type WarEvent } from "@/lib/events";
 
 // 하단 패널 자리에 들어가는 사건 카드. 닫으면 다시 타임라인 패널로 돌아간다
@@ -16,8 +18,9 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
     <article aria-labelledby="event-card-title" className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="text-xs text-muted tabular-nums">
-            {formatEventDate(event)} · {event.placeName}
+          <p className="flex items-center gap-1 text-xs text-muted tabular-nums">
+            <KindIcon kind={event.kind} size={14} />
+            {KIND_LABEL[event.kind]} · {formatEventDate(event)} · {event.placeName}
           </p>
           <h2
             id="event-card-title"

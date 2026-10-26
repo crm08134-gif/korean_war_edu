@@ -2,6 +2,7 @@
 
 import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
+import { KIND_LABEL, kindIconSvg } from "@/lib/event-kinds";
 import type { WarEvent } from "@/lib/events";
 import { easeInOutCubic, interpolateLine } from "@/lib/geometry";
 import { EMPTY_DATA, KOREA_BOUNDS, MAP_STYLE, MAX_BOUNDS, extraData, warData } from "@/lib/map-style";
@@ -24,19 +25,21 @@ function drawLine(map: MapLibreMap, line: Position[]) {
 function markerElement(event: WarEvent, selected: boolean, onSelect: (id: string) => void): HTMLButtonElement {
   const element = document.createElement("button");
   element.type = "button";
-  element.setAttribute("aria-label", `${event.title} 사건 보기`);
+  element.setAttribute("aria-label", `${event.title}(${KIND_LABEL[event.kind]}) 사건 보기`);
   element.setAttribute("aria-pressed", String(selected));
   element.className = "flex items-center gap-1";
 
-  // 흰 바탕에 검정 테두리: 북 빨강·남 파랑 어느 쪽 위에서도 보이고 두 색과 겹치지 않는다
-  const dot = document.createElement("span");
-  dot.className = selected
-    ? "size-3.5 rounded-full border-[3px] border-ink bg-white"
-    : "size-3 rounded-full border-2 border-ink bg-white";
+  // 종류 아이콘을 담은 원. 흰 바탕에 검정 선이라 북 빨강·남 파랑 어느 쪽 위에서도 보이고 두 색과 겹치지 않는다.
+  // 고른 사건은 색을 뒤집는다 (검정 바탕에 흰 선)
+  const badge = document.createElement("span");
+  badge.className = `flex size-[26px] items-center justify-center rounded-full border-2 border-ink ${
+    selected ? "bg-ink text-white" : "bg-white text-ink"
+  }`;
+  badge.innerHTML = kindIconSvg(event.kind, 16);
   const label = document.createElement("span");
   label.className = "rounded-md bg-white/90 px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap text-ink";
   label.textContent = event.title;
-  element.append(dot, label);
+  element.append(badge, label);
 
   element.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -158,8 +161,8 @@ export default function FrontlineMap({
     const markers = events.map((event) => {
       const selected = event.id === selectedId;
       const element = markerElement(event, selected, (id) => onSelectRef.current(id));
-      // 왼쪽 끝(점의 왼쪽 가장자리)을 기준으로 놓고, 점 반지름만큼 당겨 점 가운데가 사건 위치에 오게 한다
-      return new Marker({ element, anchor: "left", offset: [selected ? -7 : -6, 0] })
+      // 왼쪽 끝(원의 왼쪽 가장자리)을 기준으로 놓고, 원 반지름만큼 당겨 원 가운데가 사건 위치에 오게 한다
+      return new Marker({ element, anchor: "left", offset: [-13, 0] })
         .setLngLat([event.lon, event.lat])
         .addTo(map);
     });

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
+import KindIcon from "@/components/KindIcon";
 import Timeline from "@/components/Timeline";
 import { eventsBetween, fetchEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
@@ -168,8 +169,9 @@ function EventChips({ events, onSelect }: { events: WarEvent[]; onSelect: (id: s
             key={event.id}
             type="button"
             onClick={() => onSelect(event.id)}
-            className="h-11 shrink-0 rounded-full border border-rule bg-white px-3.5 text-sm font-medium"
+            className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-rule bg-white pr-3.5 pl-3 text-sm font-medium"
           >
+            <KindIcon kind={event.kind} />
             {event.title}
           </button>
         ))}

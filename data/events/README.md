@@ -37,10 +37,12 @@ UTF-8로 저장한다. 쉼표가 들어간 값은 큰따옴표로 감싼다.
   "lat": 37.1,
   "kind": "battle",
   "summary": "요약 2~3문장",
+  "photo": {"file": "osan-example.jpg", "caption": "대표 사진 설명"},
   "body": [
     {"type": "heading", "text": "배경"},
     {"type": "paragraph", "text": "문단"},
-    {"type": "table", "caption": "표 제목", "columns": ["구분", "미군", "북한군"], "rows": [["병력", "…", "…"]], "note": "표 아래 작은 글씨 (없으면 null)"}
+    {"type": "table", "caption": "표 제목", "columns": ["구분", "미군", "북한군"], "rows": [["병력", "…", "…"]], "note": "표 아래 작은 글씨 (없으면 null)"},
+    {"type": "photo", "file": "osan-example-2.jpg", "caption": "본문 사진 설명"}
   ],
   "sources": [
     {"sourceId": "cmh-appleman", "locator": "5장"}
@@ -58,15 +60,16 @@ UTF-8로 저장한다. 쉼표가 들어간 값은 큰따옴표로 감싼다.
 | `placeName`, `lon`, `lat` | 장소와 좌표. 좌표 출처는 CLAUDE.md 0장 "좌표". 정확한 지점이 없으면 가까운 도시를 쓰고 이름에 "(대표 위치)"를 붙인다 |
 | `kind` | 종류. 지도 마커 아이콘을 고른다: `battle` 전투, `offensive` 공세·돌파, `capture` 점령·함락·수복, `landing` 상륙, `withdrawal` 철수, `talks` 회담·협정 |
 | `summary` | 카드 위쪽 요약 2~3문장 |
-| `body` | 본문 블록 배열. `heading`(소제목: 배경·경과·결과·의미), `paragraph`(문단), `table`(표) |
+| `photo` | 대표 사진(제목 아래). 없으면 뺀다. 사진과 메타데이터는 [data/photos/](../photos/README.md) |
+| `body` | 본문 블록 배열. `heading`(소제목: 배경·경과·결과·의미), `paragraph`(문단), `table`(표), `photo`(사진) |
 | `sources` | 출처 목록. 카드 맨 아래에 이 순서대로 "기관, 제목, 장·쪽" 한 줄씩 나온다 |
 | `status` | 새로 쓴 사건은 `draft`. 사용자가 검수한 뒤 `reviewed`로 바꾼다. 화면에는 나오지 않는다 |
 
 ## 앱에 들어가는 방식
 
-이 폴더가 기준이다. 앱이 켜질 때 `EventLoader`가 DB의 사건과 출처를 모두 지우고 이 폴더 내용으로 다시 넣는다. 백엔드는 `reviewed`만 내보내고, 환경 변수 `EVENTS_INCLUDE_DRAFTS=true`로 켜면 `draft`도 내보낸다.
+이 폴더가 기준이다. 앱이 켜질 때 `EventLoader`가 DB의 사건과 출처, 사진 메타데이터를 모두 지우고 이 폴더 내용으로 다시 넣는다. 백엔드는 `reviewed`만 내보내고, 환경 변수 `EVENTS_INCLUDE_DRAFTS=true`로 켜면 `draft`도 내보낸다.
 
 아래 중 하나라도 걸리면 앱이 뜨지 않는다. 로그에 어느 파일인지 나온다.
 
-- 적재기: 파일 이름이 `<date>-<id>.json`과 다르다, 모르는 필드나 블록 `type`이 있다, 본문이나 출처가 없다, 빈 소제목·문단이 있다, 표의 줄과 칸 이름의 칸 수가 다르다
-- DB: 빠진 필수 값, 전쟁 기간 밖의 날짜, 한반도 밖의 좌표, 모르는 `kind`·`datePrecision`·`status`, `sources.csv`에 없는 `sourceId`, 같은 출처·장이 두 번
+- 적재기: 파일 이름이 `<date>-<id>.json`과 다르다, 모르는 필드나 블록 `type`이 있다, 본문이나 출처가 없다, 빈 소제목·문단·사진 설명이 있다, 표의 줄과 칸 이름의 칸 수가 다르다
+- DB: 빠진 필수 값, 전쟁 기간 밖의 날짜, 한반도 밖의 좌표, 모르는 `kind`·`datePrecision`·`status`, `sources.csv`에 없는 `sourceId`, 같은 출처·장이 두 번, `photos.csv`에 없는 사진, 한 사건에 같은 사진이 두 번, 설명 없는 대표 사진

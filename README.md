@@ -12,9 +12,10 @@
 | `frontend/` | Next.js + MapLibre GL JS 지도 화면 |
 | `data/frontlines/` | 전환점 전선 스냅샷(목록 CSV, GeoJSON)과 제작 규칙 |
 | `data/events/` | 사건 카드(JSON)와 출처 목록(CSV), 작성 형식 |
+| `data/photos/` | 사건 카드 사진과 라이선스 메타데이터(CSV) |
 | `data/reference/` | 한반도 외곽선 등 계산 기준 데이터 |
 | `docs/adr/` | 설계 결정 기록 |
-| `scripts/` | 저장소 설정 스크립트, 전선 스냅샷 제작 도구(`scripts/frontline/`) |
+| `scripts/` | 저장소 설정 스크립트, 전선 스냅샷 제작 도구(`scripts/frontline/`), 사진 줄이기(`scripts/photos/`) |
 
 ## 로컬 실행
 
@@ -64,5 +65,7 @@ npm run dev             # http://localhost:3000
 ## 데이터 출처와 라이선스
 
 - 전선: 미 육군 군사사 센터(CMH) 공간사의 퍼블릭 도메인 지도를 지오레퍼런싱·트레이싱해 직접 제작합니다. 자세한 규칙은 [data/frontlines/README.md](data/frontlines/README.md)에 있습니다.
+- 사건 카드: 사실은 미 육군 군사사 센터(CMH) 전사와 한국 공식 자료로 확인하고 문장은 직접 씁니다. 출처는 카드마다 적습니다. [data/events/README.md](data/events/README.md)
+- 사진: 퍼블릭 도메인, CC0, CC BY, CC BY-SA, 공공누리 제1유형만 씁니다. 사진마다 작성자·원본·라이선스를 남기고 화면에 표기합니다. [data/photos/README.md](data/photos/README.md)
 - 한반도 외곽선: [Natural Earth](https://www.naturalearthdata.com/) 1:10m v5.1.2 (퍼블릭 도메인). [data/reference/README.md](data/reference/README.md) 참고.
 - 코드와 데이터의 라이선스는 따로 정할 예정입니다.

@@ -13,7 +13,36 @@ export type TableBlock = {
   note: string | null; // 표 아래 작은 글씨
 };
 
-export type Block = { type: "heading"; text: string } | { type: "paragraph"; text: string } | TableBlock;
+// 본문 사진. file은 data/photos/의 파일 이름이고 /photos/<file>로 내려받는다
+export type PhotoBlock = { type: "photo"; file: string; caption: string };
+
+export type Block = { type: "heading"; text: string } | { type: "paragraph"; text: string } | TableBlock | PhotoBlock;
+
+// 허용 목록의 라이선스 (CLAUDE.md 0장). 백엔드 DB가 이 밖의 값을 막는다
+export const LICENSE_LABEL: Record<string, string> = {
+  "public-domain": "퍼블릭 도메인",
+  cc0: "CC0",
+  "cc-by-2.0": "CC BY 2.0",
+  "cc-by-2.5": "CC BY 2.5",
+  "cc-by-3.0": "CC BY 3.0",
+  "cc-by-4.0": "CC BY 4.0",
+  "cc-by-sa-2.0": "CC BY-SA 2.0",
+  "cc-by-sa-2.5": "CC BY-SA 2.5",
+  "cc-by-sa-3.0": "CC BY-SA 3.0",
+  "cc-by-sa-4.0": "CC BY-SA 4.0",
+  "kogl-1": "공공누리 제1유형",
+};
+
+// 사진 메타데이터 (data/photos/photos.csv). 사진 아래 출처 표기에 쓴다
+export type PhotoMeta = {
+  file: string;
+  title: string;
+  author: string; // 작성자·기관 (예: 미 육군 통신대 / NARA)
+  sourceUrl: string; // 원본 페이지
+  license: string;
+  licenseUrl: string | null;
+  modified: string | null; // 크기 조정·자르기
+};
 
 // 카드 맨 아래 출처 목록 한 줄: "미 육군 군사사 센터, 책 제목, 3장"
 export type SourceRef = {
@@ -33,8 +62,11 @@ export type WarEvent = {
   lat: number;
   kind: EventKind;
   summary: string; // 2~3문장
+  photoFile: string | null; // 대표 사진 (카드 위쪽)
+  photoCaption: string | null;
   body: Block[];
   sources: SourceRef[];
+  photos: PhotoMeta[]; // 대표 사진과 본문 사진의 메타데이터
   status: "draft" | "reviewed"; // 화면에는 보이지 않는다. 백엔드가 reviewed만 내보내는 데 쓴다
 };
 

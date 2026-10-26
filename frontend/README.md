@@ -11,7 +11,7 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-- `/api/*` 요청은 Next 서버가 백엔드(기본 `http://localhost:8080`)로 넘긴다. 백엔드 주소가 다르면 `BACKEND_URL` 환경 변수로 바꾼다.
+- `/api/*`와 사건 카드 사진(`/photos/*`) 요청은 Next 서버가 백엔드(기본 `http://localhost:8080`)로 넘긴다. 백엔드 주소가 다르면 `BACKEND_URL` 환경 변수로 바꾼다.
 - 백엔드는 검수된(`reviewed`) 사건만 내보낸다. 검수 전(`draft`) 사건까지 보려면 백엔드를 환경 변수 `EVENTS_INCLUDE_DRAFTS=true`로 켠다. 화면에는 검수 여부를 표시하지 않는다.
 - `npm run dev`와 `npm run build`는 시작 전에 maplibre-gl의 워커 파일을 `public/`으로 복사한다 (`scripts/copy-maplibre-worker.mjs`).
 
@@ -61,7 +61,7 @@ cloudflared tunnel --url http://localhost:3000  # 다른 터미널. https://….
 | --- | --- |
 | `src/components/WarMapApp.tsx` | 화면 전체: 날짜와 사건 이름, 지도, 범례, 사건 칩, 타임라인, 이전/다음. 사건을 고르면 하단 패널이 카드로 바뀐다 |
 | `src/components/FrontlineMap.tsx` | MapLibre 지도. 스냅샷이 바뀌면 전선을 1.2초 동안 옮긴다. 사건 마커는 HTML 마커로 맨 위에 놓는다 |
-| `src/components/EventCard.tsx` | 사건 카드: 날짜·장소, 제목, 요약, 본문(소제목·문단·표), 출처 목록 |
+| `src/components/EventCard.tsx` | 사건 카드: 날짜·장소, 제목, 대표 사진, 요약, 본문(소제목·문단·표·사진), 출처 목록. 사진 아래에 출처와 라이선스 |
 | `src/components/KindIcon.tsx` | 사건 종류 아이콘 (칩, 카드) |
 | `src/components/Timeline.tsx` | 전쟁 기간 전체 줄과 스냅샷 점 |
 | `src/lib/geometry.ts` | 전선으로 양측 나누기(반평면), 보간, 추가 영역의 쪽 판정 |

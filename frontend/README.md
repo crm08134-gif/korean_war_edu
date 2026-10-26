@@ -61,12 +61,12 @@ cloudflared tunnel --url http://localhost:3000  # 다른 터미널. https://….
 | --- | --- |
 | `src/components/WarMapApp.tsx` | 화면 전체: 날짜와 사건 이름, 지도, 범례, 사건 칩, 타임라인, 이전/다음. 사건을 고르면 하단 패널이 카드로 바뀐다 |
 | `src/components/FrontlineMap.tsx` | MapLibre 지도. 스냅샷이 바뀌면 전선을 1.2초 동안 옮긴다. 사건 마커는 HTML 마커로 맨 위에 놓는다 |
-| `src/components/EventCard.tsx` | 사건 카드: 날짜·장소, 훅, 본문, 근거 보기(주장마다 원문 인용과 출처) |
+| `src/components/EventCard.tsx` | 사건 카드: 날짜·장소, 제목, 요약, 본문(소제목·문단·표), 출처 목록 |
 | `src/components/Timeline.tsx` | 전쟁 기간 전체 줄과 스냅샷 점 |
 | `src/lib/geometry.ts` | 전선으로 양측 나누기(반평면), 보간, 추가 영역의 쪽 판정 |
 | `src/lib/map-style.ts` | 지도 레이어와 색 |
 | `src/lib/snapshots.ts` | API 응답 타입, 날짜 계산 |
-| `src/lib/events.ts` | 사건 API 응답 타입, 스냅샷 구간의 사건 고르기 |
+| `src/lib/events.ts` | 사건 API 응답 타입, 본문 블록 타입, 스냅샷 구간의 사건 고르기 |
 | `public/geo/` | 바다 덮개와 주변 나라. 만드는 방법은 [data/reference/README.md](../data/reference/README.md) |
 | `src/app/manifest.ts`, `public/icons/`, `src/app/icon.png`, `src/app/apple-icon.png` | 홈 화면 설치(PWA) 정보와 아이콘 (`scripts/make-app-icons.mjs`로 만듦) |
 

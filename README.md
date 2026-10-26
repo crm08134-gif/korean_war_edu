@@ -11,6 +11,7 @@
 | `backend/` | Spring Boot API |
 | `frontend/` | Next.js + MapLibre GL JS 지도 화면 |
 | `data/frontlines/` | 전환점 전선 스냅샷(목록 CSV, GeoJSON)과 제작 규칙 |
+| `data/events/` | 사건 카드(JSON)와 출처 목록(CSV), 작성 형식 |
 | `data/reference/` | 한반도 외곽선 등 계산 기준 데이터 |
 | `docs/adr/` | 설계 결정 기록 |
 | `scripts/` | 저장소 설정 스크립트, 전선 스냅샷 제작 도구(`scripts/frontline/`) |
@@ -30,6 +31,7 @@ cd backend
 - 상태 확인: http://localhost:8080/actuator/health
 - API 문서: http://localhost:8080/swagger-ui.html
 - 전선 스냅샷: http://localhost:8080/api/snapshots (앱이 시작될 때 `data/frontlines/`의 파일로 DB를 맞춘다)
+- 사건: http://localhost:8080/api/events (앱이 시작될 때 `data/events/`의 파일로 DB를 다시 채운다)
 - IntelliJ에서 실행할 때는 Run Configuration의 Working directory를 `backend`로 지정한다
 
 **프론트** (백엔드를 켜 둔 채로, 다른 터미널에서)

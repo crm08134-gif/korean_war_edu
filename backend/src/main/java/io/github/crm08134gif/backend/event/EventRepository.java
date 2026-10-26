@@ -15,24 +15,19 @@ public class EventRepository {
                    e.place_name,
                    ST_X(e.geom) AS lon,
                    ST_Y(e.geom) AS lat,
-                   e.category,
-                   e.hook,
+                   e.kind,
+                   e.summary,
                    e.body,
-                   e.confidence_tier,
-                   e.status,
                    (SELECT json_agg(json_build_object(
-                               'text', c.text,
-                               'evidence', (SELECT json_agg(json_build_object(
-                                                       'locator', v.locator,
-                                                       'quote', v.quote,
-                                                       'source', to_json(s))
-                                                   ORDER BY v.id)
-                                            FROM claim_evidence v
-                                            JOIN source_doc s ON s.id = v.source_id
-                                            WHERE v.claim_id = c.id))
-                           ORDER BY c.id)
-                    FROM event_claim c
-                    WHERE c.event_id = e.id) AS claims
+                               'publisher', s.publisher,
+                               'title', s.title,
+                               'url', s.url,
+                               'locator', es.locator)
+                           ORDER BY es.id)
+                    FROM event_source es
+                    JOIN source_doc s ON s.id = es.source_id
+                    WHERE es.event_id = e.id) AS sources,
+                   e.status
             FROM event e
             WHERE e.status = 'reviewed' OR :includeDrafts
             ORDER BY e.event_date, e.id

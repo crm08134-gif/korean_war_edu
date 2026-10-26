@@ -11,11 +11,11 @@ record EventResponse (
     String placeName,
     double lon,
     double lat,
-    String category,
-    String hook,
-    String body,
-    String confidenceTier,
-    String status,
-    @JsonRawValue String claims
+    String kind,
+    String summary,
+    // DB가 만든 JSON 글자를 다시 감싸지 않고 그대로 내보낸다
+    @JsonRawValue String body,
+    @JsonRawValue String sources,
+    String status
 ) {
 }

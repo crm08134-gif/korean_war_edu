@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
 import Timeline from "@/components/Timeline";
+import { eventsBetween, fetchEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
 import { fetchSnapshots, formatDate, type Snapshot } from "@/lib/snapshots";
 
@@ -11,6 +13,8 @@ type Load = { status: "loading" } | { status: "error" } | { status: "ready"; sna
 export default function WarMapApp() {
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [index, setIndex] = useState(0);
+  const [events, setEvents] = useState<WarEvent[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -25,13 +29,41 @@ export default function WarMapApp() {
     return () => controller.abort();
   }, []);
 
+  // 사건은 따로 불러온다. 못 불러와도 전선 지도는 그대로 보여 준다
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchEvents(controller.signal)
+      .then(setEvents)
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          console.error(error);
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
   const snapshots = load.status === "ready" ? load.snapshots : [];
   const last = snapshots.length - 1;
   const current = snapshots[index];
 
-  // 키보드 ←/→로도 넘긴다 (PC에서 볼 때)
+  // 직전 스냅샷 다음 날부터 지금 스냅샷 날짜까지 일어난 사건만 보여 준다
+  const from = index > 0 ? snapshots[index - 1].snapshotDate : null;
+  const to = current ? current.snapshotDate : null;
+  const visibleEvents = useMemo(() => (to ? eventsBetween(events, from, to) : []), [events, from, to]);
+  const selected = visibleEvents.find((event) => event.id === selectedId) ?? null;
+
+  // 스냅샷을 넘기면 열려 있던 사건 카드는 닫는다
+  const goTo = (i: number) => {
+    setIndex(i);
+    setSelectedId(null);
+  };
+
+  // 키보드 ←/→로도 넘긴다 (PC에서 볼 때). Esc는 사건 카드를 닫는다
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Escape") {
+        setSelectedId(null);
+      }
       if (event.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
       if (event.key === "ArrowRight") setIndex((i) => Math.min(last, i + 1));
     };
@@ -58,7 +90,14 @@ export default function WarMapApp() {
       </header>
 
       <div className="relative min-h-0 flex-1">
-        {current && <FrontlineMap snapshot={current} />}
+        {current && (
+          <FrontlineMap
+            snapshot={current}
+            events={visibleEvents}
+            selectedId={selected?.id ?? null}
+            onSelectEvent={setSelectedId}
+          />
+        )}
         {load.status === "loading" && <Notice>전선 데이터를 불러오는 중…</Notice>}
         {load.status === "error" && <Notice>전선 데이터를 불러오지 못했습니다. 백엔드가 켜져 있는지 확인해 주세요.</Notice>}
         {load.status === "ready" && snapshots.length === 0 && <Notice>아직 스냅샷이 없습니다.</Notice>}
@@ -72,28 +111,40 @@ export default function WarMapApp() {
       </div>
 
       {current && (
-        <section className="flex flex-col gap-4 rounded-t-[20px] border-t border-rule-soft bg-white px-5 pt-[18px] pb-[calc(24px+env(safe-area-inset-bottom))]">
-          <div className="flex flex-col gap-1 text-xs text-muted">
-            <p>전선 근거 · {current.sourceMap}</p>
-            <p>해안선·국경 · Natural Earth</p>
-          </div>
+        <section
+          className={`flex flex-col gap-4 rounded-t-[20px] border-t border-rule-soft bg-white px-5 pt-[18px] pb-[calc(24px+env(safe-area-inset-bottom))] ${
+            selected ? "max-h-[65dvh] overflow-y-auto" : ""
+          }`}
+        >
+          {selected ? (
+            <EventCard event={selected} onClose={() => setSelectedId(null)} />
+          ) : (
+            <>
+              {visibleEvents.length > 0 && <EventChips events={visibleEvents} onSelect={setSelectedId} />}
 
-          <Timeline snapshots={snapshots} index={index} onSelect={setIndex} />
+              <div className="flex flex-col gap-1 text-xs text-muted">
+                <p>전선 근거 · {current.sourceMap}</p>
+                <p>해안선·국경 · Natural Earth</p>
+              </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <StepButton
-              direction="prev"
-              label={index > 0 ? snapshots[index - 1].title : "처음입니다"}
-              disabled={index === 0}
-              onClick={() => setIndex(index - 1)}
-            />
-            <StepButton
-              direction="next"
-              label={index < last ? snapshots[index + 1].title : "마지막입니다"}
-              disabled={index === last}
-              onClick={() => setIndex(index + 1)}
-            />
-          </div>
+              <Timeline snapshots={snapshots} index={index} onSelect={goTo} />
+
+              <div className="grid grid-cols-2 gap-3">
+                <StepButton
+                  direction="prev"
+                  label={index > 0 ? snapshots[index - 1].title : "처음입니다"}
+                  disabled={index === 0}
+                  onClick={() => goTo(index - 1)}
+                />
+                <StepButton
+                  direction="next"
+                  label={index < last ? snapshots[index + 1].title : "마지막입니다"}
+                  disabled={index === last}
+                  onClick={() => goTo(index + 1)}
+                />
+              </div>
+            </>
+          )}
         </section>
       )}
     </main>
@@ -103,6 +154,27 @@ export default function WarMapApp() {
 function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center px-8 text-center text-sm text-muted">{children}</div>
+  );
+}
+
+// 폰에서는 지도 위 작은 마커를 누르기 어려워서, 같은 사건을 칩으로도 보여 준다
+function EventChips({ events, onSelect }: { events: WarEvent[]; onSelect: (id: string) => void }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-xs font-medium text-muted">이 시기의 사건 {events.length}</p>
+      <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5">
+        {events.map((event) => (
+          <button
+            key={event.id}
+            type="button"
+            onClick={() => onSelect(event.id)}
+            className="h-11 shrink-0 rounded-full border border-rule bg-white px-3.5 text-sm font-medium"
+          >
+            {event.title}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

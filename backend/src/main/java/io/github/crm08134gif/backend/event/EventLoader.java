@@ -14,7 +14,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectWriter;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.csv.CsvMapper;
 import tools.jackson.dataformat.csv.CsvReadFeature;
@@ -29,12 +31,16 @@ public class EventLoader implements ApplicationRunner {
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .build();
 
+    // List만 보면 요소가 Block인지 모르므로 알려 준다. 그래야 블록마다 "type"을 다시 써 준다
+    private static final ObjectWriter BODY_WRITER = JSON.writerFor(new TypeReference<List<EventJson.Block>>() {
+    });
+
     private static final CsvMapper CSV = CsvMapper.builder()
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .enable(CsvReadFeature.EMPTY_STRING_AS_NULL)
         .build();
 
-    record SourceRow(String id, String title, String author, String url, String license) {
+    record SourceRow(String id, String title, String author, String publisher, String url, String license) {
     }
 
     private final ResourcePatternResolver resources;
@@ -48,6 +54,7 @@ public class EventLoader implements ApplicationRunner {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void run(ApplicationArguments args) throws IOException {
+        // 사건의 출처 목록(event_source)은 ON DELETE CASCADE로 함께 지워진다
         jdbc.sql("DELETE FROM event").update();
         jdbc.sql("DELETE FROM source_doc").update();
 
@@ -79,53 +86,83 @@ public class EventLoader implements ApplicationRunner {
         }
     }
 
+    // DB 제약으로 막기 어려운 것만 여기서 본다 (빈 칸, 날짜 범위, 종류 값 등은 DB가 막는다)
     private static void check(EventJson e, String fileName) {
         if (!fileName.equals(e.date() + "-" + e.id() + ".json")) {
             throw new IllegalStateException("파일 이름이 <date>-<id>.json 과 다르다");
         }
-        if (e.claims() == null || e.claims().isEmpty()) {
-            throw new IllegalStateException("주장이 하나도 없다");
+        if (e.sources() == null || e.sources().isEmpty()) {
+            throw new IllegalStateException("출처가 하나도 없다");
         }
-        for (EventJson.Claim claim : e.claims()) {
-            if (claim.evidence() == null || claim.evidence().isEmpty()) {
-                throw new IllegalStateException("근거가 없는 주장이 있다: " + claim.text());
+        if (e.body() == null || e.body().isEmpty()) {
+            throw new IllegalStateException("본문이 없다");
+        }
+        for (EventJson.Block block : e.body()) {
+            switch (block) {
+                case EventJson.Heading h -> checkText(h.text());
+                case EventJson.Paragraph p -> checkText(p.text());
+                case EventJson.Table t -> checkTable(t);
+            }
+        }
+    }
+
+    // JSON 배열 안이라 DB의 NOT NULL이 닿지 않는다
+    private static void checkText(String text) {
+        if (text == null || text.isBlank()) {
+            throw new IllegalStateException("본문에 빈 소제목이나 문단이 있다");
+        }
+    }
+
+    private static void checkTable(EventJson.Table table) {
+        if (table.columns() == null || table.rows() == null || table.rows().isEmpty()) {
+            throw new IllegalStateException("표에 칸 이름이나 줄이 없다: " + table.caption());
+        }
+        for (List<String> row : table.rows()) {
+            if (row.size() != table.columns().size()) {
+                throw new IllegalStateException("표의 줄과 칸 이름의 칸 수가 다르다: " + table.caption() + " " + row);
             }
         }
     }
 
     private void insert(EventJson e) {
-        jdbc.sql(INSERT_EVENT).paramSource(e).update();
-        for (EventJson.Claim claim : e.claims()) {
-            long claimId = jdbc.sql("INSERT INTO event_claim (event_id, text) VALUES (:eventId, :text) RETURNING id")
+        jdbc.sql(INSERT_EVENT)
+            .param("id", e.id())
+            .param("title", e.title())
+            .param("date", e.date())
+            .param("datePrecision", e.datePrecision())
+            .param("placeName", e.placeName())
+            .param("lon", e.lon())
+            .param("lat", e.lat())
+            .param("kind", e.kind())
+            .param("summary", e.summary())
+            // 블록 목록을 다시 JSON 글자로 바꿔 jsonb 열에 넣는다
+            .param("body", BODY_WRITER.writeValueAsString(e.body()))
+            .param("status", e.status())
+            .update();
+        for (EventJson.SourceRef source : e.sources()) {
+            jdbc.sql(INSERT_EVENT_SOURCE)
                 .param("eventId", e.id())
-                .param("text", claim.text())
-                .query(Long.class)
-                .single();
-            for (EventJson.Evidence evidence : claim.evidence()) {
-                jdbc.sql(INSERT_EVIDENCE)
-                    .param("claimId", claimId)
-                    .param("sourceId", evidence.sourceId())
-                    .param("locator", evidence.locator())
-                    .param("quote", evidence.quote())
-                    .update();
-            }
+                .param("sourceId", source.sourceId())
+                .param("locator", source.locator())
+                .update();
         }
     }
+
     private static final String INSERT_SOURCE = """
-            INSERT INTO source_doc (id, title, author, url, license)
-            VALUES (:id, :title, :author, :url, :license)
+            INSERT INTO source_doc (id, title, author, publisher, url, license)
+            VALUES (:id, :title, :author, :publisher, :url, :license)
             """;
 
     private static final String INSERT_EVENT = """
             INSERT INTO event (id, title, event_date, date_precision, place_name, geom,
-                               category, hook, body, confidence_tier, status)
+                               kind, summary, body, status)
             VALUES (:id, :title, :date, :datePrecision, :placeName,
                     ST_SetSRID(ST_MakePoint(:lon, :lat), 4326),
-                    :category, :hook, :body, :confidenceTier, :status)
+                    :kind, :summary, CAST(:body AS jsonb), :status)
             """;
 
-    private static final String INSERT_EVIDENCE = """
-            INSERT INTO claim_evidence (claim_id, source_id, locator, quote)
-            VALUES (:claimId, :sourceId, :locator, :quote)
+    private static final String INSERT_EVENT_SOURCE = """
+            INSERT INTO event_source (event_id, source_id, locator)
+            VALUES (:eventId, :sourceId, :locator)
             """;
 }

@@ -49,4 +49,9 @@ tasks.named('processResources') {
         include 'snapshots.csv', '*.geojson'
         into 'frontlines'
     }
+    // 저장소 최상위 data/events의 출처와 사건 파일을 jar 안 events/ 로 복사한다
+    from('../data/events') {
+        include 'sources.csv', '*.json'
+        into 'events'
+    }
 }

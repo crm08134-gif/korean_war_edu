@@ -1,0 +1,59 @@
+{
+  "id": "outbreak",
+  "title": "개전",
+  "date": "1950-06-25",
+  "datePrecision": "day",
+  "placeName": "옹진 반도 (첫 공격 지점)",
+  "lon": 125.36194,
+  "lat": 37.93472,
+  "category": "record",
+  "hook": "1950년 6월 25일 새벽 4시경, 북한군이 38선 전역에서 공격을 시작했다.",
+  "body": "1950년 6월 25일 새벽 4시경, 북한군의 첫 공격이 옹진 반도에서 시작됐다. 포격 뒤 지상군이 38선을 넘었고, 공격은 서해안에서 동해안까지 이어진 협동 공격이었다. 개성은 오전 9시 30분까지 북한군에 점령됐고, 동해안에서는 북한군 부대가 강릉 부근에 상륙했다. 미 육군 전사는 침공 병력을 약 9만 명, T-34 전차 150대로 적는다. 북한 방송은 이를 '자위를 위한 반격'이라고 주장했다.",
+  "confidenceTier": "confirmed",
+  "status": "draft",
+  "claims": [
+    {
+      "text": "북한군의 첫 공격은 6월 25일 새벽 4시경 옹진 반도에서 시작됐다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "…with the earliest attack striking the Ongjin Peninsula at approximately 0400."}
+      ]
+    },
+    {
+      "text": "옹진에서는 포격과 박격포·소화기 사격 뒤 약 30분 만에 지상군이 전차 없이 38선을 넘었다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "…began about 0400 with a heavy artillery and mortar barrage and small arms fire"},
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "The ground attack came half an hour later across the Parallel without armored support."}
+      ]
+    },
+    {
+      "text": "공격은 서해안에서 동해안까지 이어진 협동 공격이었다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "…it signaled a co-ordinated attack from coast to coast."}
+      ]
+    },
+    {
+      "text": "개성은 오전 9시 30분까지 북한군에 완전히 점령됐다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "Kaesong was entirely in enemy hands by 0930."}
+      ]
+    },
+    {
+      "text": "동해안에서는 북한군 제766독립부대 2개 대대가 강릉 부근에 상륙했다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "Meanwhile, two battalions of the 766th Independent Unit had landed near Kangnung."}
+      ]
+    },
+    {
+      "text": "미 육군 전사는 침공 병력을 약 9만 명, T-34 전차 150대로 적는다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "This force numbered approximately 90,000 men supported by 150 T34 tanks."}
+      ]
+    },
+    {
+      "text": "북한 방송은 북한군이 '자위를 위해 반격했다'고 주장했다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "The broadcast said the North Korea People's Army had struck back in self-defense and had begun a \"righteous invasion.\""}
+      ]
+    }
+  ]
+}

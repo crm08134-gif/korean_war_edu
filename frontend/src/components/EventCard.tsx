@@ -3,7 +3,15 @@
 import { useEffect, useRef } from "react";
 import KindIcon from "@/components/KindIcon";
 import { KIND_LABEL } from "@/lib/event-kinds";
-import { formatEventDate, type Block, type SourceRef, type TableBlock, type WarEvent } from "@/lib/events";
+import {
+  LICENSE_LABEL,
+  formatEventDate,
+  type Block,
+  type PhotoMeta,
+  type SourceRef,
+  type TableBlock,
+  type WarEvent,
+} from "@/lib/events";
 
 // 하단 패널 자리에 들어가는 사건 카드. 닫으면 다시 타임라인 패널로 돌아간다
 export default function EventCard({ event, onClose }: { event: WarEvent; onClose: () => void }) {
@@ -13,6 +21,9 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
   useEffect(() => {
     headingRef.current?.focus();
   }, [event.id]);
+
+  // 사진 아래 출처 표기에 쓸 메타데이터를 파일 이름으로 찾는다
+  const photoMeta = new Map(event.photos.map((meta) => [meta.file, meta]));
 
   return (
     <article aria-labelledby="event-card-title" className="flex flex-col gap-3">
@@ -43,11 +54,19 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
         </button>
       </div>
 
+      {event.photoFile && event.photoCaption && (
+        <Photo file={event.photoFile} caption={event.photoCaption} meta={photoMeta.get(event.photoFile)} />
+      )}
+
       <p className="text-[15px] leading-relaxed font-semibold">{event.summary}</p>
 
-      {event.body.map((block, i) => (
-        <BodyBlock key={i} block={block} />
-      ))}
+      {event.body.map((block, i) =>
+        block.type === "photo" ? (
+          <Photo key={i} file={block.file} caption={block.caption} meta={photoMeta.get(block.file)} />
+        ) : (
+          <BodyBlock key={i} block={block} />
+        ),
+      )}
 
       {/* 출처 목록. 주장마다 근거를 달지 않고 사건 전체의 출처를 한 줄씩 적는다 */}
       <footer className="mt-2 flex flex-col gap-1 border-t border-rule-soft pt-3 text-xs leading-relaxed text-muted">
@@ -64,7 +83,7 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
   );
 }
 
-function BodyBlock({ block }: { block: Block }) {
+function BodyBlock({ block }: { block: Exclude<Block, { type: "photo" }> }) {
   switch (block.type) {
     case "heading":
       return <h3 className="mt-2 text-base font-semibold">{block.text}</h3>;
@@ -112,6 +131,47 @@ function BodyTable({ table }: { table: TableBlock }) {
       </div>
       {table.note && <p className="text-xs text-muted">{table.note}</p>}
     </div>
+  );
+}
+
+// 사진과 그 바로 아래 출처 표기 (CLAUDE.md 0장). 예: "사진: 미 육군 통신대 / NARA · 제목 · 퍼블릭 도메인"
+function Photo({ file, caption, meta }: { file: string; caption: string; meta: PhotoMeta | undefined }) {
+  return (
+    <figure className="flex flex-col gap-1.5">
+      {/* 사진은 미리 줄여 두고(data/photos/README.md) Next 이미지 최적화(sharp)는 쓰지 않는다 */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/photos/${encodeURIComponent(file)}`}
+        alt={caption}
+        loading="lazy"
+        className="w-full rounded-[10px] bg-sea"
+      />
+      <figcaption className="flex flex-col gap-0.5">
+        <span className="text-sm">{caption}</span>
+        {meta && <PhotoCredit meta={meta} />}
+      </figcaption>
+    </figure>
+  );
+}
+
+function PhotoCredit({ meta }: { meta: PhotoMeta }) {
+  const license = LICENSE_LABEL[meta.license] ?? meta.license;
+  return (
+    <span className="text-xs text-muted">
+      사진: {meta.author} ·{" "}
+      <a href={meta.sourceUrl} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+        {meta.title}
+      </a>{" "}
+      ·{" "}
+      {meta.licenseUrl ? (
+        <a href={meta.licenseUrl} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+          {license}
+        </a>
+      ) : (
+        license
+      )}
+      {meta.modified && <> · {meta.modified}</>}
+    </span>
   );
 }
 

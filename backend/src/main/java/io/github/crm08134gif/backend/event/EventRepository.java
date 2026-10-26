@@ -17,6 +17,8 @@ public class EventRepository {
                    ST_Y(e.geom) AS lat,
                    e.kind,
                    e.summary,
+                   e.photo_file,
+                   e.photo_caption,
                    e.body,
                    (SELECT json_agg(json_build_object(
                                'publisher', s.publisher,
@@ -27,6 +29,19 @@ public class EventRepository {
                     FROM event_source es
                     JOIN source_doc s ON s.id = es.source_id
                     WHERE es.event_id = e.id) AS sources,
+                   -- 대표 사진과 본문 사진의 출처 표기에 쓰는 메타데이터. 사진이 없으면 빈 배열
+                   (SELECT COALESCE(json_agg(json_build_object(
+                                        'file', p.file,
+                                        'title', p.title,
+                                        'author', p.author,
+                                        'sourceUrl', p.source_url,
+                                        'license', p.license,
+                                        'licenseUrl', p.license_url,
+                                        'modified', p.modified)
+                                    ORDER BY p.file), '[]')
+                    FROM event_photo ep
+                    JOIN photo p ON p.file = ep.file
+                    WHERE ep.event_id = e.id) AS photos,
                    e.status
             FROM event e
             WHERE e.status = 'reviewed' OR :includeDrafts

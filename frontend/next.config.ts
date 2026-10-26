@@ -12,7 +12,11 @@ const nextConfig: NextConfig = {
   // 같은 Wi-Fi의 폰(사설 IP)에서 개발 서버를 열 수 있게 한다. 개발 서버(npm run dev)에만 적용된다
   allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "172.*.*.*"],
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
+    return [
+      { source: "/api/:path*", destination: `${backendUrl}/api/:path*` },
+      // 사건 카드 사진 (data/photos/). 백엔드가 jar 안의 static/photos/에서 내준다
+      { source: "/photos/:path*", destination: `${backendUrl}/photos/:path*` },
+    ];
   },
   turbopack: {
     rules: {

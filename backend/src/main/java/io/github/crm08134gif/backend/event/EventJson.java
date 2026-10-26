@@ -16,6 +16,7 @@ record EventJson(
     Double lat,
     String kind,
     String summary,
+    Photo photo,
     List<Block> body,
     List<SourceRef> sources,
     String status
@@ -26,8 +27,9 @@ record EventJson(
         @JsonSubTypes.Type(value = Heading.class, name = "heading"),
         @JsonSubTypes.Type(value = Paragraph.class, name = "paragraph"),
         @JsonSubTypes.Type(value = Table.class, name = "table"),
+        @JsonSubTypes.Type(value = PhotoBlock.class, name = "photo"),
     })
-    sealed interface Block permits Heading, Paragraph, Table {
+    sealed interface Block permits Heading, Paragraph, Table, PhotoBlock {
     }
 
     // 소제목 (배경, 경과, 결과, 의미)
@@ -39,6 +41,14 @@ record EventJson(
 
     // 표. rows의 줄마다 칸 수가 columns와 같아야 한다. note는 표 아래 작은 글씨(출처 등)
     record Table(String caption, List<String> columns, List<List<String>> rows, String note) implements Block {
+    }
+
+    // 본문 사진. file은 data/photos/photos.csv에 있는 파일 이름
+    record PhotoBlock(String file, String caption) implements Block {
+    }
+
+    // 대표 사진 (카드 위쪽, 없어도 된다)
+    record Photo(String file, String caption) {
     }
 
     // 출처 목록 한 줄: sources.csv의 id와 장·쪽

@@ -54,4 +54,13 @@ tasks.named('processResources') {
         include 'sources.csv', '*.json'
         into 'events'
     }
+    // 사진 메타데이터는 photos/ 로, 사진 파일은 static/photos/ 로 복사한다 (static/ 아래는 /photos/<파일>로 내려받을 수 있다)
+    from('../data/photos') {
+        include 'photos.csv'
+        into 'photos'
+    }
+    from('../data/photos') {
+        exclude 'photos.csv', 'README.md'
+        into 'static/photos'
+    }
 }

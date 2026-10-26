@@ -81,8 +81,9 @@
 ## 3. 작업 방식
 
 - 한국어로 짧게 설명한다. 과한 절차는 피한다. 버전과 API는 원본 문서에서 확인한다.
-- PR 하나에 한 가지 일. 브랜치 → 커밋 → 사용자 확인 → push → PR → CI 통과 → 사용자가 Squash merge.
-  - 브랜치를 만들고 커밋하는 것까지는 해도 된다. **push, PR 생성, 머지는 사용자에게 먼저 묻는다.**
+- PR 하나에 한 가지 일. 브랜치 → 커밋 → push → PR → CI 통과 → Squash merge.
+  - **전투 재생 전까지(사건 종료일 칸, 남은 사건 카드)는 Claude가 push, PR 생성, CI 통과 확인, Squash merge까지 한다.** 사건은 draft로 머지하고, reviewed로 바꾸는 것은 사용자가 검수한 뒤 말할 때만 한다.
+  - **전투 재생("애니메이션 보기")부터 그 뒤의 기능은 사용자가 직접 구현한다. Claude는 코드를 먼저 쓰지 않는다.** 설계 상의, 자료 찾기, 리뷰, 질문 답변으로 돕고, 사용자가 코드를 써 달라고 분명히 말할 때만 쓴다. 이 기능들의 push·PR·머지는 사용자에게 먼저 묻는다.
   - 커밋 메시지는 Conventional Commits(`feat:`, `fix:`, `docs:`, `chore:`). PR 제목도 같은 형식으로 쓴다(Squash merge가 PR 제목을 main 커밋 제목으로 쓴다).
   - main을 브랜치에 merge하지 않는다. 필요하면 rebase하거나 `git switch -C <브랜치> origin/main`으로 다시 만든다.
 - PR 본문은 `.github/pull_request_template.md` 칸에 맞춰 쓴다.

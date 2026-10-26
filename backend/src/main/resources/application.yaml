@@ -4,3 +4,5 @@ spring:
   docker:
     compose:
       file: ../compose.yaml
+events:
+  include-drafts: false

@@ -1,0 +1,54 @@
+{
+  "id": "han-bridge-seoul",
+  "title": "한강 인도교 폭파와 서울 함락",
+  "date": "1950-06-28",
+  "datePrecision": "day",
+  "placeName": "한강 인도교 (지금의 한강대교)",
+  "lon": 126.9578,
+  "lat": 37.5159,
+  "category": "record",
+  "hook": "피란민이 가득한 한강 인도교가 새벽 2시 15분경 경고 없이 폭파됐다.",
+  "body": "1950년 6월 28일 새벽 2시 15분경, 한강 인도교가 다리를 메운 군인과 피란민에게 경고 없이 폭파됐다. 폭발로 남쪽 경간 2개가 강에 떨어졌고, 당시 서울에 있던 미군 장교들은 500~800명이 죽거나 익사했다고 추정했다. 누가 폭파를 명령했는지는 진술이 엇갈린다. 강 북쪽에 남은 국군 주력은 수송 수단과 보급품 대부분을 잃었다. 같은 날 오후, 북한군 3·4사단이 서울 점령을 마쳤다.",
+  "confidenceTier": "confirmed",
+  "status": "draft",
+  "claims": [
+    {
+      "text": "한강 인도교는 6월 28일 새벽 2시 15분경, 다리를 메운 군인과 피란민에게 경고 없이 폭파됐다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "…were set off about 0215 with no warning to the military personnel and the civilian population crowding the bridges."}
+      ]
+    },
+    {
+      "text": "폭발로 인도교 남쪽 경간 2개가 강에 떨어졌다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "The gigantic explosions, which dropped two spans of the Han highway bridge into the water on the south side…"}
+      ]
+    },
+    {
+      "text": "당시 서울에 있던 미군 장교들은 폭파로 500~800명이 죽거나 익사했다고 추정했다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "The best informed American officers in Seoul at the time estimate that between 500 and 800 people were killed or drowned in the blowing of this bridge."}
+      ]
+    },
+    {
+      "text": "누가 폭파를 명령했는지는 진술이 엇갈린다. 국방부 차관이 명령했다는 진술이 있고, 채병덕 총참모장은 자신이 명령했다는 것을 부인했다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "…the Vice Minister of Defense had ordered the blowing of the bridges at 0130"},
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "General Chae denied that he had given the order."}
+      ]
+    },
+    {
+      "text": "강 북쪽에 남은 국군 주력은 수송 수단과 보급품 대부분을 잃었다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "The main part of the army, still north of the river, lost nearly all its transport, most of its supplies…"}
+      ]
+    },
+    {
+      "text": "같은 날 오후, 북한군 3·4사단이 서울 점령을 마쳤다.",
+      "evidence": [
+        {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "The two North Korean divisions completed the occupation of Seoul during the afternoon."},
+        {"sourceId": "cmh-appleman", "locator": "Chapter V, The North Koreans Cross the Han River", "quote": "After capturing Seoul the North Korean 3d and 4th Divisions spent a day or two searching the city…"}
+      ]
+    }
+  ]
+}

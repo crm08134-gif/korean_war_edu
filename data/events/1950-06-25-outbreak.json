@@ -4,8 +4,8 @@
   "date": "1950-06-25",
   "datePrecision": "day",
   "placeName": "옹진 반도 (첫 공격 지점)",
-  "lon": 125.36194,
-  "lat": 37.93472,
+  "lon": 125.357092,
+  "lat": 37.937102,
   "category": "record",
   "hook": "1950년 6월 25일 새벽 4시경, 북한군이 38선 전역에서 공격을 시작했다.",
   "body": "1950년 6월 25일 새벽 4시경, 북한군의 첫 공격이 옹진 반도에서 시작됐다. 포격 뒤 지상군이 38선을 넘었고, 공격은 서해안에서 동해안까지 이어진 협동 공격이었다. 개성은 오전 9시 30분까지 북한군에 점령됐고, 동해안에서는 북한군 부대가 강릉 부근에 상륙했다. 미 육군 전사는 침공 병력을 약 9만 명, T-34 전차 150대로 적는다. 북한 방송은 이를 '자위를 위한 반격'이라고 주장했다.",
@@ -50,7 +50,7 @@
       ]
     },
     {
-      "text": "북한 방송은 북한군이 '자위를 위해 반격했다'고 주장했다.",
+      "text": "북한 방송은 북한군이 '자기방어를 위해 반격했다'고 주장했다.",
       "evidence": [
         {"sourceId": "cmh-appleman", "locator": "Chapter III, Invasion Across the Parallel", "quote": "The broadcast said the North Korea People's Army had struck back in self-defense and had begun a \"righteous invasion.\""}
       ]

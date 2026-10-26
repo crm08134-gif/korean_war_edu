@@ -17,8 +17,6 @@ export type Evidence = {
 
 export type Claim = { text: string; evidence: Evidence[] };
 
-export type ConfidenceTier = "confirmed" | "consensus" | "disputed" | "myth";
-
 export type WarEvent = {
   id: string;
   title: string;
@@ -30,8 +28,7 @@ export type WarEvent = {
   category: string;
   hook: string;
   body: string;
-  confidenceTier: ConfidenceTier;
-  status: "draft" | "reviewed";
+  status: "draft" | "reviewed"; // 화면에는 보이지 않는다. 백엔드가 reviewed만 내보내는 데 쓴다
   claims: Claim[] | null;
 };
 
@@ -42,14 +39,6 @@ export async function fetchEvents(signal?: AbortSignal): Promise<WarEvent[]> {
   }
   return res.json();
 }
-
-// 신뢰도 등급 (기획서 5장 검증 구조)
-export const TIER_LABEL: Record<ConfidenceTier, string> = {
-  confirmed: "사료로 확인",
-  consensus: "학계 통설",
-  disputed: "논쟁 중",
-  myth: "근거 없는 속설",
-};
 
 // 직전 스냅샷 다음 날부터 지금 스냅샷 날짜까지의 사건. 첫 스냅샷(from 없음)은 그날까지
 export function eventsBetween(events: WarEvent[], from: string | null, to: string): WarEvent[] {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { TIER_LABEL, formatEventDate, type EventSource, type WarEvent } from "@/lib/events";
+import { formatEventDate, type EventSource, type WarEvent } from "@/lib/events";
 
 // 하단 패널 자리에 들어가는 사건 카드. 닫으면 다시 타임라인 패널로 돌아간다
 export default function EventCard({ event, onClose }: { event: WarEvent; onClose: () => void }) {
@@ -40,15 +40,6 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
             <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
         </button>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        <span className="rounded-full border border-rule px-2.5 py-1 text-xs font-medium">
-          {TIER_LABEL[event.confidenceTier]}
-        </span>
-        {event.status === "draft" && (
-          <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-medium text-white">검수 전</span>
-        )}
       </div>
 
       <p className="text-[15px] leading-snug font-semibold">{event.hook}</p>

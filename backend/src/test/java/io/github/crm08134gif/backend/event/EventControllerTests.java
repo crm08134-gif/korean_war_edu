@@ -103,5 +103,24 @@ class EventControllerTests {
                 """).update())
             .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    void listsEndDate() {
+        insertEvents();
+        jdbc.sql("UPDATE event SET end_date = '1950-07-03' WHERE id = 'test-reviewed'").update();
+
+        MvcTestResult result = mvc.get().uri("/api/events").exchange();
+
+        assertThat(result).bodyJson().extractingPath("$[?(@.id == 'test-reviewed')].endDate").asArray()
+            .containsExactly("1950-07-03");
+    }
+
+    @Test
+    void rejectsEndDateNotAfterStart() {
+        insertEvents();
+        // 시험 사건의 시작일은 1950-07-01이다
+        assertThatThrownBy(() -> jdbc.sql("UPDATE event SET end_date = '1950-07-01' WHERE id = 'test-reviewed'").update())
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
 }
 

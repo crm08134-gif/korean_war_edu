@@ -11,6 +11,7 @@ public class EventRepository {
             SELECT e.id,
                    e.title,
                    e.event_date AS date,
+                   e.end_date,
                    e.date_precision,
                    e.place_name,
                    ST_X(e.geom) AS lon,

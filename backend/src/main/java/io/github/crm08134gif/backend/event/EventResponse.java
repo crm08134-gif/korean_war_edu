@@ -7,6 +7,7 @@ record EventResponse (
     String id,
     String title,
     LocalDate date,
+    LocalDate endDate,
     String datePrecision,
     String placeName,
     double lon,

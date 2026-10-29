@@ -151,11 +151,6 @@ export default function WarMapApp() {
             <>
               {visibleEvents.length > 0 && <EventChips events={visibleEvents} onSelect={setSelectedId} />}
 
-              <div className="flex flex-col gap-1 text-xs text-muted">
-                <p>전선 근거 · {current.sourceMap}</p>
-                <p>해안선·국경 · Natural Earth</p>
-              </div>
-
               <Timeline snapshots={snapshots} hasPrewar={hasPrewar} index={index} onSelect={goTo} />
 
               <div className="grid grid-cols-2 gap-3">

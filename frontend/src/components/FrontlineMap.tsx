@@ -2,8 +2,9 @@
 
 import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
+import KindIcon from "@/components/KindIcon";
 import { KIND_LABEL, kindIconSvg } from "@/lib/event-kinds";
-import type { WarEvent } from "@/lib/events";
+import type { Region, WarEvent } from "@/lib/events";
 import { easeInOutCubic, interpolateLine } from "@/lib/geometry";
 import {
   EMPTY_DATA,
@@ -18,6 +19,12 @@ import type { Position, Snapshot } from "@/lib/snapshots";
 
 // 전선이 다음 스냅샷으로 옮겨 가는 시간
 const MOVE_MS = 1200;
+
+// 처음 화면에서 한반도 둘레에 두는 여백. 아래쪽은 범례 자리만큼 비운다
+const PADDING = { top: 12, right: 12, bottom: 44, left: 12 };
+// "개전 전" 칸에서는 위·양옆에 가장자리 마커 자리(EdgeMarkers)를 더 비운다.
+// fitBounds가 한반도 범위를 이 여백 안쪽에 맞추므로, 가장자리 띠가 이보다 좁으면 한반도와 겹치지 않는다
+const EDGE_PADDING = { top: 60, right: 96, bottom: 44, left: 96 };
 
 // MapLibre의 줌 0 세계 크기(px). 줌이 1 오르면 두 배가 된다
 const WORLD_PX = 512;
@@ -97,11 +104,13 @@ export default function FrontlineMap({
   events,
   selectedId,
   onSelectEvent,
+  edgeLayout,
 }: {
   snapshot: Snapshot;
   events: WarEvent[];
   selectedId: string | null;
   onSelectEvent: (id: string) => void;
+  edgeLayout: boolean; // "개전 전" 칸: 가장자리 마커 자리를 비우고 한반도를 안쪽으로 줄인다
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -109,6 +118,8 @@ export default function FrontlineMap({
   const onSelectRef = useRef(onSelectEvent);
   const shownLineRef = useRef<Position[] | null>(null);
   const [ready, setReady] = useState(false);
+  // 지도를 만들 때의 여백을 고르는 데 쓴다 (지도 만드는 effect는 한 번만 돈다)
+  const edgeRef = useRef(edgeLayout);
 
   // 마커는 만들 때의 함수를 붙잡고 있으므로, 늘 최신 함수를 부르도록 ref에 둔다
   useEffect(() => {
@@ -130,8 +141,7 @@ export default function FrontlineMap({
         container: containerRef.current,
         style: MAP_STYLE,
         bounds: KOREA_BOUNDS,
-        // 아래쪽은 범례 자리만큼 비운다
-        fitBoundsOptions: { padding: { top: 12, right: 12, bottom: 44, left: 12 } },
+        fitBoundsOptions: { padding: edgeRef.current ? EDGE_PADDING : PADDING },
         // 최소 줌과 끌 수 있는 범위는 지도 칸 크기에 맞춰 applyViewLimit이 정한다
         maxZoom: 9,
         dragRotate: false,
@@ -166,6 +176,7 @@ export default function FrontlineMap({
     }
     const target = snapshot.frontLine.coordinates;
     const from = shownLineRef.current;
+    // "개전 전" 칸과 개전 칸은 같은 선(38선)이라 움직이지 않는다
     const finish = () => {
       drawLine(map, target);
       shownLineRef.current = target;
@@ -173,7 +184,7 @@ export default function FrontlineMap({
     };
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!from || reduceMotion) {
+    if (!from || from === target || reduceMotion) {
       finish();
       return;
     }
@@ -197,20 +208,33 @@ export default function FrontlineMap({
     return () => cancelAnimationFrame(frame);
   }, [snapshot, ready]);
 
-  // 이 시기의 사건 마커. 사건이나 선택이 바뀌면 다시 그린다
+  // "개전 전" 칸에 들어가거나 나올 때 한반도를 가장자리 여백에 맞춰 다시 맞춘다
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || edgeRef.current === edgeLayout) {
+      return;
+    }
+    edgeRef.current = edgeLayout;
+    map.fitBounds(KOREA_BOUNDS, { padding: edgeLayout ? EDGE_PADDING : PADDING, duration: 600 });
+  }, [edgeLayout, ready]);
+
+  // 이 시기의 사건 마커. 사건이나 선택이 바뀌면 다시 그린다. 좌표가 없는 사건은 EdgeMarkers가 그린다
   useEffect(() => {
     const map = mapRef.current;
     const Marker = markerClassRef.current;
     if (!ready || !map || !Marker) {
       return;
     }
-    const markers = events.map((event) => {
+    const markers = events.flatMap((event) => {
+      if (event.lon === null || event.lat === null) {
+        return [];
+      }
       const selected = event.id === selectedId;
       const element = markerElement(event, selected, (id) => onSelectRef.current(id));
       // 왼쪽 끝(원의 왼쪽 가장자리)을 기준으로 놓고, 원 반지름만큼 당겨 원 가운데가 사건 위치에 오게 한다
-      return new Marker({ element, anchor: "left", offset: [-13, 0] })
-        .setLngLat([event.lon, event.lat])
-        .addTo(map);
+      return [
+        new Marker({ element, anchor: "left", offset: [-13, 0] }).setLngLat([event.lon, event.lat]).addTo(map),
+      ];
     });
     return () => markers.forEach((marker) => marker.remove());
   }, [events, selectedId, ready]);
@@ -219,6 +243,145 @@ export default function FrontlineMap({
   return (
     <div className="absolute inset-0">
       <div ref={containerRef} className="h-full w-full" role="img" aria-label="전선과 양측 지역 지도" />
+      {edgeLayout && <EdgeMarkers events={events} selectedId={selectedId} onSelect={onSelectEvent} />}
     </div>
+  );
+}
+
+// 지도 가장자리: 소련은 위, 중국은 왼쪽, 미국은 오른쪽 (CLAUDE.md 4장 "개전 전")
+const REGION_NAME: Record<Region, string> = { north: "소련", west: "중국", east: "미국" };
+
+// 양옆 띠의 높이 어림 (px). 이름 칸은 88px 폭에 한 줄 7자쯤 들어가고 세 줄까지 쓴다
+const NAME_TAG_PX = 22; // 쪽 이름표
+const BADGE_PX = 40; // 위 간격 + 아이콘 원 + 이름과의 간격
+const LINE_PX = 15;
+
+function columnHeight(list: WarEvent[], withLabels: boolean): number {
+  return list.reduce(
+    (sum, event) => sum + BADGE_PX + (withLabels ? Math.min(3, Math.ceil(event.title.length / 7)) * LINE_PX + 4 : 0),
+    NAME_TAG_PX,
+  );
+}
+
+// 지도 밖(모스크바·베이징·워싱턴) 사건. 가짜 좌표를 만들지 않고 지도 칸 가장자리에 줄지어 놓는다.
+// 지도를 끌어도 움직이지 않는다. 띠의 크기는 EDGE_PADDING 안쪽이다 (위 52px, 양옆 88px).
+// 양옆 띠는 위쪽 띠와 범례 사이에만 둔다. 사건 카드를 열어 지도 칸이 낮아지면 이름을 빼고 아이콘만,
+// 그래도 모자라면 양옆 띠를 숨긴다 (카드를 닫으면 다시 보인다)
+function EdgeMarkers({
+  events,
+  selectedId,
+  onSelect,
+}: {
+  events: WarEvent[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const bandRef = useRef<HTMLDivElement>(null);
+  const [bandHeight, setBandHeight] = useState(0);
+  useEffect(() => {
+    const band = bandRef.current;
+    if (!band) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => setBandHeight(entry.contentRect.height));
+    observer.observe(band);
+    return () => observer.disconnect();
+  }, []);
+
+  const inRegion = (region: Region) => events.filter((event) => event.region === region);
+  const north = inRegion("north");
+  const west = inRegion("west");
+  const east = inRegion("east");
+  const tallest = (withLabels: boolean) => Math.max(columnHeight(west, withLabels), columnHeight(east, withLabels));
+  const sides = bandHeight >= tallest(true) ? "full" : bandHeight >= tallest(false) ? "icons" : "hidden";
+  return (
+    <>
+      {north.length > 0 && (
+        <div className="absolute inset-x-2 top-2 flex h-11 items-center justify-center gap-2">
+          <RegionName region="north" />
+          {north.map((event) => (
+            <EdgeMarker key={event.id} event={event} selected={event.id === selectedId} onSelect={onSelect} row />
+          ))}
+        </div>
+      )}
+      <div ref={bandRef} className="pointer-events-none absolute inset-x-1 top-14 bottom-11">
+        {sides !== "hidden" &&
+          (["west", "east"] as const).map((region) => {
+            const list = region === "west" ? west : east;
+            return (
+              list.length > 0 && (
+                <div
+                  key={region}
+                  className={`pointer-events-auto absolute top-1/2 flex w-[88px] -translate-y-1/2 flex-col items-center ${
+                    sides === "full" ? "gap-2.5" : "gap-1.5"
+                  } ${region === "west" ? "left-0" : "right-0"}`}
+                >
+                  <RegionName region={region} />
+                  {list.map((event) => (
+                    <EdgeMarker
+                      key={event.id}
+                      event={event}
+                      selected={event.id === selectedId}
+                      onSelect={onSelect}
+                      showLabel={sides === "full"}
+                    />
+                  ))}
+                </div>
+              )
+            );
+          })}
+      </div>
+    </>
+  );
+}
+
+function RegionName({ region }: { region: Region }) {
+  return (
+    <span className="shrink-0 rounded-full border border-ink/40 bg-white/70 px-2 py-0.5 text-[11px] font-semibold text-muted">
+      {REGION_NAME[region]}
+    </span>
+  );
+}
+
+// 지도 마커(markerElement)와 같은 모양: 흰 바탕 검정 선의 원, 고르면 색을 뒤집는다.
+// 위쪽 띠는 아이콘 오른쪽에 두 줄까지, 양옆 띠는 좁아서 아이콘 아래에 세 줄까지 이름을 쓴다
+function EdgeMarker({
+  event,
+  selected,
+  onSelect,
+  row = false,
+  showLabel = true,
+}: {
+  event: WarEvent;
+  selected: boolean;
+  onSelect: (id: string) => void;
+  row?: boolean;
+  showLabel?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(event.id)}
+      aria-label={`${event.title}(${KIND_LABEL[event.kind]}) 사건 보기`}
+      aria-pressed={selected}
+      className={`flex min-w-0 items-center gap-1 ${row ? "shrink" : "flex-col"}`}
+    >
+      <span
+        className={`flex size-[26px] shrink-0 items-center justify-center rounded-full border-2 border-ink ${
+          selected ? "bg-ink text-white" : "bg-white text-ink"
+        }`}
+      >
+        <KindIcon kind={event.kind} />
+      </span>
+      {showLabel && (
+        <span
+          className={`rounded-md bg-white/90 px-1.5 py-0.5 text-xs font-semibold text-ink ${
+            row ? "line-clamp-2 text-left leading-tight" : "line-clamp-3 text-center leading-tight"
+          }`}
+        >
+          {event.title}
+        </span>
+      )}
+    </button>
   );
 }

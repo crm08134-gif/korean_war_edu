@@ -202,6 +202,7 @@ public class EventLoader implements ApplicationRunner {
             .param("placeName", e.placeName())
             .param("lon", e.lon())
             .param("lat", e.lat())
+            .param("region", e.region())
             .param("kind", e.kind())
             .param("summary", e.summary())
             .param("photoFile", photo == null ? null : photo.file())
@@ -250,10 +251,11 @@ public class EventLoader implements ApplicationRunner {
             """;
 
     private static final String INSERT_EVENT = """
-            INSERT INTO event (id, title, event_date, end_date, date_precision, place_name, geom,
+            INSERT INTO event (id, title, event_date, end_date, date_precision, place_name, geom, region,
                                kind, summary, photo_file, photo_caption, body, status)
             VALUES (:id, :title, :date, :endDate, :datePrecision, :placeName,
-                    ST_SetSRID(ST_MakePoint(:lon, :lat), 4326),
+                    -- 좌표가 없으면(null) geom도 null이 된다
+                    ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :region,
                     :kind, :summary, :photoFile, :photoCaption, CAST(:body AS jsonb), :status)
             """;
 

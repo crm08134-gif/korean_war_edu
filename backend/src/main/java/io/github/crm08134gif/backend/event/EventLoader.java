@@ -37,8 +37,6 @@ public class EventLoader implements ApplicationRunner {
     // 사진 파일은 static/ 아래라 /photos/<파일 이름>으로 바로 내려받을 수 있다. photos.csv는 내보내지 않는다
     private static final String PHOTO_DIR = "classpath:static/photos/";
     private static final String PHOTO_CSV = "classpath:photos/photos.csv";
-    // 웹툰 그림도 static/ 아래라 /toons/<파일 이름>으로 내려받는다
-    private static final String TOON_DIR = "classpath:static/toons/";
 
     private static final JsonMapper JSON = JsonMapper.builder()
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -46,9 +44,6 @@ public class EventLoader implements ApplicationRunner {
 
     // List만 보면 요소가 Block인지 모르므로 알려 준다. 그래야 블록마다 "type"을 다시 써 준다
     private static final ObjectWriter BODY_WRITER = JSON.writerFor(new TypeReference<List<EventJson.Block>>() {
-    });
-
-    private static final ObjectWriter TOONS_WRITER = JSON.writerFor(new TypeReference<List<EventJson.Toon>>() {
     });
 
     private static final CsvMapper CSV = CsvMapper.builder()
@@ -97,7 +92,7 @@ public class EventLoader implements ApplicationRunner {
         }
 
         List<PhotoRow> photos = readCsv(PHOTO_CSV, PhotoRow.class);
-        checkPhotoFiles(photoNames(photos), fileNames(PHOTO_DIR));
+        checkPhotoFiles(photoNames(photos), photoFileNames());
         for (PhotoRow photo : photos) {
             try {
                 jdbc.sql(INSERT_PHOTO).paramSource(photo).update();
@@ -107,23 +102,16 @@ public class EventLoader implements ApplicationRunner {
         }
 
         Resource[] files = resources.getResources(DIR + "*.json");
-        // 사건들이 쓴 웹툰 그림 파일. 다 넣은 뒤 data/toons/의 파일과 맞춰 본다
-        Set<String> usedToons = new HashSet<>();
         for (Resource file : files) {
             try (InputStream in = file.getInputStream()) {
                 EventJson event = JSON.readValue(in, EventJson.class);
                 check(event, file.getFilename());
                 insert(event);
-                for (EventJson.Toon toon : toons(event)) {
-                    usedToons.add(toon.file());
-                }
             } catch (RuntimeException e) {
                 throw new IllegalStateException(file.getFilename() + " 사건을 넣지 못했다: " + e.getMessage(), e);
             }
         }
-        checkToonFiles(usedToons, fileNames(TOON_DIR));
-        log.info("사건 {}개, 출처 {}개, 사진 {}개, 웹툰 그림 {}개를 DB에 맞췄다",
-            files.length, sources.size(), photos.size(), usedToons.size());
+        log.info("사건 {}개, 출처 {}개, 사진 {}개를 DB에 맞췄다", files.length, sources.size(), photos.size());
     }
 
     private <T> List<T> readCsv(String path, Class<T> type) throws IOException {
@@ -144,14 +132,13 @@ public class EventLoader implements ApplicationRunner {
         return names;
     }
 
-    // 사진·웹툰 폴더의 파일 이름들
-    private Set<String> fileNames(String dir) throws IOException {
+    private Set<String> photoFileNames() throws IOException {
         Set<String> names = new HashSet<>();
-        // 파일이 하나도 없으면 폴더도 만들어지지 않는다
-        if (!resources.getResource(dir).exists()) {
+        // 사진이 하나도 없으면 폴더도 만들어지지 않는다
+        if (!resources.getResource(PHOTO_DIR).exists()) {
             return names;
         }
-        for (Resource file : resources.getResources(dir + "*")) {
+        for (Resource file : resources.getResources(PHOTO_DIR + "*")) {
             names.add(file.getFilename());
         }
         return names;
@@ -171,38 +158,12 @@ public class EventLoader implements ApplicationRunner {
         }
     }
 
-    // 웹툰 그림은 DB 표가 없어(JSON 열) 외래 키 대신 여기서 맞춰 본다.
-    // 사건이 쓰는 그림은 파일이 있어야 하고, 어느 사건도 쓰지 않는 그림 파일은 두지 않는다
-    static void checkToonFiles(Set<String> used, Set<String> files) {
-        for (String file : used) {
-            if (!files.contains(file)) {
-                throw new IllegalStateException("사건이 쓰는 웹툰 그림 파일이 data/toons/에 없다: " + file);
-            }
-        }
-        for (String file : files) {
-            if (!used.contains(file)) {
-                throw new IllegalStateException("어느 사건도 쓰지 않는 웹툰 그림 파일이 있다: " + file);
-            }
-        }
-    }
-
-    // toons는 빼도 되므로 null이면 빈 목록으로 본다
-    private static List<EventJson.Toon> toons(EventJson e) {
-        return e.toons() == null ? List.of() : e.toons();
-    }
-
     // DB 제약으로 막기 어려운 것만 여기서 본다 (빈 칸, 날짜 범위, 종류 값 등은 DB가 막는다)
     private static void check(EventJson e, String fileName) {
         if (!fileName.equals(e.date() + "-" + e.id() + ".json")) {
             throw new IllegalStateException("파일 이름이 <date>-<id>.json 과 다르다");
         }
         checkContent(e.sources(), e.body());
-        // JSON 열 안이라 DB의 NOT NULL이 닿지 않는다. alt는 그림 속 글을 화면 낭독기에 전한다
-        for (EventJson.Toon toon : toons(e)) {
-            if (toon.file() == null || toon.file().isBlank() || toon.alt() == null || toon.alt().isBlank()) {
-                throw new IllegalStateException("웹툰 그림에 file이나 alt가 비었다");
-            }
-        }
     }
 
     // 사건과 이야기(StoryLoader)가 함께 쓰는 검사: 출처와 본문이 있어야 하고, 본문 블록이 비면 안 된다
@@ -255,7 +216,6 @@ public class EventLoader implements ApplicationRunner {
             .param("region", e.region())
             .param("kind", e.kind())
             .param("summary", e.summary())
-            .param("toons", TOONS_WRITER.writeValueAsString(toons(e)))
             .param("photoFile", photo == null ? null : photo.file())
             .param("photoCaption", photo == null ? null : photo.caption())
             // 블록 목록을 다시 JSON 글자로 바꿔 jsonb 열에 넣는다
@@ -303,11 +263,11 @@ public class EventLoader implements ApplicationRunner {
 
     private static final String INSERT_EVENT = """
             INSERT INTO event (id, title, event_date, end_date, date_precision, place_name, geom, region,
-                               kind, summary, toons, photo_file, photo_caption, body, status)
+                               kind, summary, photo_file, photo_caption, body, status)
             VALUES (:id, :title, :date, :endDate, :datePrecision, :placeName,
                     -- 좌표가 없으면(null) geom도 null이 된다
                     ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :region,
-                    :kind, :summary, CAST(:toons AS jsonb), :photoFile, :photoCaption, CAST(:body AS jsonb), :status)
+                    :kind, :summary, :photoFile, :photoCaption, CAST(:body AS jsonb), :status)
             """;
 
     private static final String INSERT_EVENT_SOURCE = """

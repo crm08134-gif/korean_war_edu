@@ -94,20 +94,6 @@ class EventControllerTests {
     }
 
     @Test
-    void listsToonsAsJson() {
-        insertEvents();
-        jdbc.sql("""
-                UPDATE event SET toons = '[{"file": "test-1.jpg", "alt": "그림 속 글"}]'
-                WHERE id = 'test-reviewed'
-                """).update();
-
-        MvcTestResult result = mvc.get().uri("/api/events").exchange();
-
-        assertThat(result).bodyJson().extractingPath("$[?(@.id == 'test-reviewed')].toons[0].file").asArray()
-            .containsExactly("test-1.jpg");
-    }
-
-    @Test
     void rejectsLicenseOutsideAllowList() {
         // 비상업(NC) 조건은 허용 목록에 없다 (CLAUDE.md 0장)
         assertThatThrownBy(() -> jdbc.sql("""

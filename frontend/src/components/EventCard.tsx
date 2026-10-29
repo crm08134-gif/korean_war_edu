@@ -10,7 +10,6 @@ import {
   type PhotoMeta,
   type SourceRef,
   type TableBlock,
-  type Toon,
   type WarEvent,
 } from "@/lib/events";
 import type { Story } from "@/lib/stories";
@@ -20,7 +19,6 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
   return (
     <ContentCard
       content={event}
-      toons={event.toons}
       meta={
         <>
           <KindIcon kind={event.kind} size={14} />
@@ -32,16 +30,14 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
   );
 }
 
-// 사건 카드와 전쟁 속 이야기 카드가 함께 쓰는 몸통: 제목, 웹툰, 대표 사진, 요약, 본문, 출처 목록.
-// 웹툰은 사건 카드에만 있다. onClose가 없으면 닫기 버튼을 그리지 않는다 (이야기 화면은 머리말에 따로 있다)
+// 사건 카드와 전쟁 속 이야기 카드가 함께 쓰는 몸통: 제목, 대표 사진, 요약, 본문, 출처 목록.
+// onClose가 없으면 닫기 버튼을 그리지 않는다 (이야기 화면은 머리말에 따로 있다)
 export function ContentCard({
   content,
-  toons = [],
   meta,
   onClose,
 }: {
   content: WarEvent | Story;
-  toons?: Toon[];
   meta: React.ReactNode;
   onClose?: () => void;
 }) {
@@ -82,8 +78,6 @@ export function ContentCard({
           </button>
         )}
       </div>
-
-      {toons.length > 0 && <Toons toons={toons} />}
 
       {content.photoFile && content.photoCaption && (
         <Photo file={content.photoFile} caption={content.photoCaption} meta={photoMeta.get(content.photoFile)} />
@@ -170,30 +164,6 @@ function BodyTable({ table }: { table: TableBlock }) {
       </div>
       {table.note && <p className="text-xs text-muted">{table.note}</p>}
     </div>
-  );
-}
-
-// 웹툰 그림 (CLAUDE.md 4장). 사용자가 직접 만든 그림이라 사진 출처 대신 지어낸 장면이 섞였다고 밝힌다
-function Toons({ toons }: { toons: Toon[] }) {
-  return (
-    <figure className="flex flex-col gap-1.5">
-      <div className="flex flex-col gap-2">
-        {toons.map((toon) => (
-          // 그림 안의 글을 읽을 수 있게 줄이지 않고 카드 폭에 맞춘다
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={toon.file}
-            src={`/toons/${encodeURIComponent(toon.file)}`}
-            alt={toon.alt}
-            loading="lazy"
-            className="w-full rounded-[10px] bg-sea"
-          />
-        ))}
-      </div>
-      <figcaption className="text-xs text-muted">
-        그림: 직접 제작(AI 생성) · 이해를 돕기 위한 그림이므로 사실과 다를 수 있음. 아래 글이 기록이다
-      </figcaption>
-    </figure>
   );
 }
 

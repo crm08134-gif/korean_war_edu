@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import KindIcon from "@/components/KindIcon";
 import { KIND_LABEL } from "@/lib/event-kinds";
 import {
@@ -12,55 +12,80 @@ import {
   type TableBlock,
   type WarEvent,
 } from "@/lib/events";
+import type { Story } from "@/lib/stories";
 
 // 하단 패널 자리에 들어가는 사건 카드. 닫으면 다시 타임라인 패널로 돌아간다
 export default function EventCard({ event, onClose }: { event: WarEvent; onClose: () => void }) {
+  return (
+    <ContentCard
+      content={event}
+      meta={
+        <>
+          <KindIcon kind={event.kind} size={14} />
+          {KIND_LABEL[event.kind]} · {formatEventDate(event)} · {event.placeName}
+        </>
+      }
+      onClose={onClose}
+    />
+  );
+}
+
+// 사건 카드와 전쟁 속 이야기 카드가 함께 쓰는 몸통: 제목, 대표 사진, 요약, 본문, 출처 목록.
+// onClose가 없으면 닫기 버튼을 그리지 않는다 (이야기 화면은 머리말에 따로 있다)
+export function ContentCard({
+  content,
+  meta,
+  onClose,
+}: {
+  content: WarEvent | Story;
+  meta: React.ReactNode;
+  onClose?: () => void;
+}) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // 사건 카드와 이야기 카드가 한 화면에 함께 있을 수 있어 제목 id를 겹치지 않게 만든다
+  const headingId = useId();
 
   // 칩이나 마커를 눌러 열면 읽기 위치(포커스)를 카드 제목으로 옮긴다
   useEffect(() => {
     headingRef.current?.focus();
-  }, [event.id]);
+  }, [content.id]);
 
   // 사진 아래 출처 표기에 쓸 메타데이터를 파일 이름으로 찾는다
-  const photoMeta = new Map(event.photos.map((meta) => [meta.file, meta]));
+  const photoMeta = new Map(content.photos.map((photo) => [photo.file, photo]));
 
   return (
-    <article aria-labelledby="event-card-title" className="flex flex-col gap-3">
+    <article aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="flex items-center gap-1 text-xs text-muted tabular-nums">
-            <KindIcon kind={event.kind} size={14} />
-            {KIND_LABEL[event.kind]} · {formatEventDate(event)} · {event.placeName}
-          </p>
+          <p className="flex items-center gap-1 text-xs text-muted tabular-nums">{meta}</p>
           <h2
-            id="event-card-title"
+            id={headingId}
             ref={headingRef}
             tabIndex={-1}
             className="font-serif text-xl font-semibold tracking-tight outline-none"
           >
-            {event.title}
+            {content.title}
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="사건 카드 닫기"
-          className="-mt-1.5 -mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="사건 카드 닫기"
+            className="-mt-1.5 -mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted"
+          >
+            <CloseIcon />
+          </button>
+        )}
       </div>
 
-      {event.photoFile && event.photoCaption && (
-        <Photo file={event.photoFile} caption={event.photoCaption} meta={photoMeta.get(event.photoFile)} />
+      {content.photoFile && content.photoCaption && (
+        <Photo file={content.photoFile} caption={content.photoCaption} meta={photoMeta.get(content.photoFile)} />
       )}
 
-      <p className="text-[15px] leading-relaxed font-semibold">{event.summary}</p>
+      <p className="text-[15px] leading-relaxed font-semibold">{content.summary}</p>
 
-      {event.body.map((block, i) =>
+      {content.body.map((block, i) =>
         block.type === "photo" ? (
           <Photo key={i} file={block.file} caption={block.caption} meta={photoMeta.get(block.file)} />
         ) : (
@@ -68,11 +93,11 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
         ),
       )}
 
-      {/* 출처 목록. 주장마다 근거를 달지 않고 사건 전체의 출처를 한 줄씩 적는다 */}
+      {/* 출처 목록. 주장마다 근거를 달지 않고 글 전체의 출처를 한 줄씩 적는다 */}
       <footer className="mt-2 flex flex-col gap-1 border-t border-rule-soft pt-3 text-xs leading-relaxed text-muted">
         <h3 className="font-semibold">출처</h3>
         <ul className="flex flex-col gap-0.5">
-          {event.sources.map((source, i) => (
+          {content.sources.map((source, i) => (
             <li key={i}>
               <SourceLine source={source} />
             </li>
@@ -80,6 +105,14 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
         </ul>
       </footer>
     </article>
+  );
+}
+
+export function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   );
 }
 

@@ -47,6 +47,9 @@ export type PhotoMeta = {
   modified: string | null; // 크기 조정·자르기
 };
 
+// 카드 맨 위의 웹툰 그림 한 장. file은 data/toons/의 파일 이름이고 /toons/<file>로 내려받는다
+export type Toon = { file: string; alt: string };
+
 // 카드 맨 아래 출처 목록 한 줄: "미 육군 군사사 센터, 책 제목, 3장"
 export type SourceRef = {
   publisher: string;
@@ -68,6 +71,7 @@ export type WarEvent = {
   region: Region | null;
   kind: EventKind;
   summary: string; // 2~3문장
+  toons: Toon[]; // 웹툰 그림. 없으면 빈 배열
   photoFile: string | null; // 대표 사진 (카드 위쪽)
   photoCaption: string | null;
   body: Block[];

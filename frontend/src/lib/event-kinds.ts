@@ -8,6 +8,8 @@ export const KIND_LABEL: Record<EventKind, string> = {
   landing: "상륙",
   withdrawal: "철수",
   talks: "회담·협정",
+  aid: "원조·지원",
+  policy: "선언·정책",
 };
 
 // 종류별 아이콘. 16×16 칸에 선(stroke)으로만 그린 직접 만든 도형이다 (남의 아이콘 세트를 쓰지 않는다)
@@ -25,6 +27,10 @@ export const KIND_ICON: Record<EventKind, string[]> = {
   withdrawal: ["M12 14V7a4 4 0 0 0-8 0v6", "M1.5 10.5L4 13l2.5-2.5"],
   // 접힌 문서와 글줄
   talks: ["M3.5 1.5h6l3 3v10h-9z", "M9.5 1.5v3h3", "M6 8h4.5", "M6 10.5h4.5"],
+  // 상자: 뚜껑, 몸통, 손잡이 구멍
+  aid: ["M1.5 2.5h13v3h-13z", "M2.5 5.5v8.5h11V5.5", "M6.5 8.5h3"],
+  // 줄 그은 문서: 접힌 귀 없는 종이에 글줄 넷 (회담·협정의 접힌 문서와 구별한다)
+  policy: ["M3 1.5h10v13H3z", "M5.5 4.5h5", "M5.5 7h5", "M5.5 9.5h5", "M5.5 12h3"],
 };
 
 // 지도 마커처럼 HTML로 그릴 때 쓰는 SVG 글자. 값은 위의 상수뿐이라 그대로 넣어도 안전하다

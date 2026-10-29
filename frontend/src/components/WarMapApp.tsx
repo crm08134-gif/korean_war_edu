@@ -5,9 +5,12 @@ import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
 import KindIcon from "@/components/KindIcon";
 import Timeline from "@/components/Timeline";
-import { eventsBetween, fetchEvents, type WarEvent } from "@/lib/events";
+import { eventsBetween, fetchEvents, formatStartDate, prewarEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
 import { fetchSnapshots, formatDate, type Snapshot } from "@/lib/snapshots";
+
+// 불러오기 전에도 같은 배열을 써서 useMemo가 매번 다시 계산하지 않게 한다
+const NO_SNAPSHOTS: Snapshot[] = [];
 
 type Load = { status: "loading" } | { status: "error" } | { status: "ready"; snapshots: Snapshot[] };
 
@@ -43,15 +46,39 @@ export default function WarMapApp() {
     return () => controller.abort();
   }, []);
 
-  const snapshots = load.status === "ready" ? load.snapshots : [];
-  const last = snapshots.length - 1;
-  const current = snapshots[index];
+  const snapshots = load.status === "ready" ? load.snapshots : NO_SNAPSHOTS;
 
-  // 직전 스냅샷 다음 날부터 지금 스냅샷 날짜까지 일어난 사건만 보여 준다
-  const from = index > 0 ? snapshots[index - 1].snapshotDate : null;
+  // 개전 앞의 사건이 있으면 타임라인 맨 앞에 "개전 전" 칸을 하나 더 둔다.
+  // 지도는 개전 스냅샷(38선)을 그대로 쓴다. 기본(reviewed만)으로 켜서 그런 사건이 없으면 칸도 없다
+  const prewar = useMemo(() => prewarEvents(events), [events]);
+  const slots = useMemo(
+    () => (prewar.length > 0 && snapshots.length > 0 ? [{ ...snapshots[0], title: "개전 전" }, ...snapshots] : snapshots),
+    [prewar, snapshots],
+  );
+  const hasPrewar = slots.length > snapshots.length;
+  const last = slots.length - 1;
+  // 사건이 스냅샷보다 늦게 와서 맨 앞에 칸이 생기면, 이미 넘겨 둔 스냅샷을 그대로 보도록 한 칸 민다
+  const [hadPrewar, setHadPrewar] = useState(hasPrewar);
+  if (hadPrewar !== hasPrewar) {
+    setHadPrewar(hasPrewar);
+    if (index > 0) {
+      setIndex(index + (hasPrewar ? 1 : -1));
+    }
+  }
+  const current = slots[index];
+  const isPrewar = hasPrewar && index === 0;
+
+  // 직전 스냅샷 다음 날부터 지금 스냅샷 날짜까지 일어난 사건만 보여 준다. "개전 전" 칸은 개전 앞의 사건 전부
+  const warIndex = hasPrewar ? index - 1 : index;
+  const from = warIndex > 0 ? snapshots[warIndex - 1].snapshotDate : null;
   const to = current ? current.snapshotDate : null;
-  const visibleEvents = useMemo(() => (to ? eventsBetween(events, from, to) : []), [events, from, to]);
+  const visibleEvents = useMemo(
+    () => (isPrewar ? prewar : to ? eventsBetween(events, from, to) : []),
+    [isPrewar, prewar, events, from, to],
+  );
   const selected = visibleEvents.find((event) => event.id === selectedId) ?? null;
+  // "개전 전" 칸의 날짜는 그 칸에서 가장 이른 사건의 시작일이다 (사건은 날짜순으로 온다)
+  const heading = current ? (isPrewar ? formatStartDate(prewar[0]) : formatDate(current.snapshotDate)) : " ";
 
   // 스냅샷을 넘기면 열려 있던 사건 카드는 닫는다
   const goTo = (i: number) => {
@@ -78,14 +105,14 @@ export default function WarMapApp() {
         <div className="flex flex-col gap-0.5">
           <div className="text-[13px] font-medium text-muted">Korean War</div>
           <h1 className="font-serif text-[26px] font-semibold tracking-tight tabular-nums">
-            {current ? formatDate(current.snapshotDate) : " "}
+            {heading}
           </h1>
           {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
           <p className="text-lg font-semibold">{current ? current.title : " "}</p>
         </div>
         {current && (
           <div className="mt-0.5 rounded-full border border-rule bg-white px-3 py-1.5 text-[13px] font-medium tabular-nums">
-            {index + 1} / {snapshots.length}
+            {index + 1} / {slots.length}
           </div>
         )}
       </header>
@@ -97,6 +124,7 @@ export default function WarMapApp() {
             events={visibleEvents}
             selectedId={selected?.id ?? null}
             onSelectEvent={setSelectedId}
+            edgeLayout={isPrewar}
           />
         )}
         {load.status === "loading" && <Notice>전선 데이터를 불러오는 중…</Notice>}
@@ -128,18 +156,18 @@ export default function WarMapApp() {
                 <p>해안선·국경 · Natural Earth</p>
               </div>
 
-              <Timeline snapshots={snapshots} index={index} onSelect={goTo} />
+              <Timeline snapshots={snapshots} hasPrewar={hasPrewar} index={index} onSelect={goTo} />
 
               <div className="grid grid-cols-2 gap-3">
                 <StepButton
                   direction="prev"
-                  label={index > 0 ? snapshots[index - 1].title : "처음입니다"}
+                  label={index > 0 ? slots[index - 1].title : "처음입니다"}
                   disabled={index === 0}
                   onClick={() => goTo(index - 1)}
                 />
                 <StepButton
                   direction="next"
-                  label={index < last ? snapshots[index + 1].title : "마지막입니다"}
+                  label={index < last ? slots[index + 1].title : "마지막입니다"}
                   disabled={index === last}
                   onClick={() => goTo(index + 1)}
                 />

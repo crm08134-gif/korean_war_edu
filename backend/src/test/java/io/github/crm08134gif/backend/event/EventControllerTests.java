@@ -122,5 +122,53 @@ class EventControllerTests {
         assertThatThrownBy(() -> jdbc.sql("UPDATE event SET end_date = '1950-07-01' WHERE id = 'test-reviewed'").update())
             .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    // 개전 전 사건은 좌표 대신 지도 가장자리(region)를 쓴다
+    void insertRegionEvent(String id, String date, String geom, String region) {
+        jdbc.sql("INSERT INTO event (id, title, event_date, date_precision, place_name, geom, region, kind, summary, body, status) "
+                + "VALUES (:id, '개전 전', CAST(:date AS date), 'day', '워싱턴 (지도 밖)', " + geom + ", :region, "
+                + "'policy', '요약', '[{\"type\": \"paragraph\", \"text\": \"본문\"}]', 'reviewed')")
+            .param("id", id)
+            .param("date", date)
+            .param("region", region)
+            .update();
+    }
+
+    @Test
+    void listsRegionWithoutCoordinates() {
+        insertRegionEvent("test-region", "1950-01-12", "NULL", "east");
+
+        MvcTestResult result = mvc.get().uri("/api/events").exchange();
+
+        assertThat(result).bodyJson().extractingPath("$[?(@.id == 'test-region')].region").asArray()
+            .containsExactly("east");
+        assertThat(result).bodyJson().extractingPath("$[?(@.id == 'test-region')].lon").asArray()
+            .containsExactly((Object) null);
+    }
+
+    // 테스트 하나가 트랜잭션 하나라, 실패한 INSERT 뒤에는 다른 SQL을 보낼 수 없다. 그래서 막히는 경우마다 나눈다
+    @Test
+    void rejectsBothCoordinatesAndRegion() {
+        assertThatThrownBy(() -> insertRegionEvent("test-both", "1950-01-12", "ST_SetSRID(ST_MakePoint(127, 37.5), 4326)", "east"))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void rejectsNeitherCoordinatesNorRegion() {
+        assertThatThrownBy(() -> insertRegionEvent("test-neither", "1950-01-12", "NULL", null))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void rejectsUnknownRegion() {
+        assertThatThrownBy(() -> insertRegionEvent("test-south", "1950-01-12", "NULL", "south"))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void rejectsDateBefore1949() {
+        assertThatThrownBy(() -> insertRegionEvent("test-1948", "1948-12-31", "NULL", "east"))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
 }
 

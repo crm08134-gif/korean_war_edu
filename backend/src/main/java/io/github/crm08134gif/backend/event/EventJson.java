@@ -13,8 +13,9 @@ record EventJson(
     LocalDate endDate, // 며칠 이어진 사건의 마지막 날. 하루짜리는 없다(null)
     String datePrecision,
     String placeName,
-    Double lon,
+    Double lon, // 개전 전 사건처럼 지도 밖이면 좌표 대신 region을 쓴다
     Double lat,
+    String region, // 지도 가장자리: north 소련, east 미국, west 중국
     String kind,
     String summary,
     Photo photo,

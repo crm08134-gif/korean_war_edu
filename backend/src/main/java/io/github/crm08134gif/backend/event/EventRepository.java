@@ -16,6 +16,7 @@ public class EventRepository {
                    e.place_name,
                    ST_X(e.geom) AS lon,
                    ST_Y(e.geom) AS lat,
+                   e.region,
                    e.kind,
                    e.summary,
                    e.photo_file,

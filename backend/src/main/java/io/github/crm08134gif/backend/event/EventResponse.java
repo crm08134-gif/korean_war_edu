@@ -10,8 +10,9 @@ record EventResponse (
     LocalDate endDate,
     String datePrecision,
     String placeName,
-    double lon,
-    double lat,
+    Double lon, // region이 있는 사건은 좌표가 없다(null)
+    Double lat,
+    String region,
     String kind,
     String summary,
     String photoFile,

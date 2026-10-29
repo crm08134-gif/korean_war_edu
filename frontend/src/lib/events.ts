@@ -1,8 +1,11 @@
 // GET /api/events 응답 (백엔드 EventResponse와 같은 모양)
-import { formatDate } from "./snapshots";
+import { WAR_START, formatDate } from "./snapshots";
 
 // 사건 종류. 지도 마커 아이콘을 고른다 (CLAUDE.md 4장)
-export type EventKind = "battle" | "offensive" | "capture" | "landing" | "withdrawal" | "talks";
+export type EventKind = "battle" | "offensive" | "capture" | "landing" | "withdrawal" | "talks" | "aid" | "policy";
+
+// 지도 밖 사건을 놓는 지도 가장자리: north 소련(위), east 미국(오른쪽), west 중국(왼쪽)
+export type Region = "north" | "east" | "west";
 
 // 본문 블록: 소제목(배경·경과·결과·의미), 문단, 표
 export type TableBlock = {
@@ -59,8 +62,10 @@ export type WarEvent = {
   endDate: string | null; // 며칠 이어진 사건의 마지막 날
   datePrecision: "day" | "month";
   placeName: string;
-  lon: number;
-  lat: number;
+  // 좌표와 region 중 하나만 있다 (DB가 막는다)
+  lon: number | null;
+  lat: number | null;
+  region: Region | null;
   kind: EventKind;
   summary: string; // 2~3문장
   photoFile: string | null; // 대표 사진 (카드 위쪽)
@@ -79,19 +84,30 @@ export async function fetchEvents(signal?: AbortSignal): Promise<WarEvent[]> {
   return res.json();
 }
 
-// 직전 스냅샷 다음 날부터 지금 스냅샷 날짜까지의 사건. 첫 스냅샷(from 없음)은 그날까지
+// 직전 스냅샷 다음 날부터 지금 스냅샷 날짜까지의 사건. 첫 스냅샷(from 없음)은 그날 사건만
+// (그 앞의 사건은 "개전 전" 칸에 나온다)
 export function eventsBetween(events: WarEvent[], from: string | null, to: string): WarEvent[] {
-  return events.filter((event) => event.date <= to && (from === null || event.date > from));
+  return events.filter((event) => event.date <= to && (from === null ? event.date === to : event.date > from));
 }
 
-// 날짜 정밀도에 맞춘 표기: "1950. 6. 25.", "1950년 8월", 기간이면 "1950. 8. 13.~8. 30."
-export function formatEventDate(event: WarEvent): string {
+// "개전 전" 칸의 사건: 개전(1950-06-25)보다 앞선 사건 전부
+export function prewarEvents(events: WarEvent[]): WarEvent[] {
+  return events.filter((event) => event.date < WAR_START);
+}
+
+// 시작일만: "1950. 1. 12." 또는 "1949년 7월"
+export function formatStartDate(event: WarEvent): string {
   if (event.datePrecision === "month") {
     const [y, m] = event.date.split("-").map(Number);
     return `${y}년 ${m}월`;
   }
+  return formatDate(event.date);
+}
+
+// 날짜 정밀도에 맞춘 표기: "1950. 6. 25.", "1950년 8월", 기간이면 "1950. 8. 13.~8. 30."
+export function formatEventDate(event: WarEvent): string {
   if (!event.endDate) {
-    return formatDate(event.date);
+    return formatStartDate(event);
   }
   // 끝나는 해가 같으면 끝 날짜의 연도는 뺀다
   const sameYear = event.endDate.slice(0, 4) === event.date.slice(0, 4);

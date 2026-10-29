@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
 import KindIcon from "@/components/KindIcon";
+import StoriesPanel from "@/components/StoriesPanel";
 import Timeline from "@/components/Timeline";
 import { eventsBetween, fetchEvents, formatStartDate, prewarEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
@@ -19,6 +20,8 @@ export default function WarMapApp() {
   const [index, setIndex] = useState(0);
   const [events, setEvents] = useState<WarEvent[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 전쟁 속 이야기 화면. 스냅샷과 상관없어서 열고 닫아도 보던 스냅샷과 사건 카드는 그대로다
+  const [storiesOpen, setStoriesOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -86,8 +89,10 @@ export default function WarMapApp() {
     setSelectedId(null);
   };
 
-  // 키보드 ←/→로도 넘긴다 (PC에서 볼 때). Esc는 사건 카드를 닫는다
+  // 키보드 ←/→로도 넘긴다 (PC에서 볼 때). Esc는 사건 카드를 닫는다.
+  // 이야기 화면이 열려 있으면 키는 그 화면이 받는다
   useEffect(() => {
+    if (storiesOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Escape") {
         setSelectedId(null);
@@ -97,10 +102,10 @@ export default function WarMapApp() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last]);
+  }, [last, storiesOpen]);
 
   return (
-    <main className="mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
+    <main className="relative mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
       <header className="flex items-start justify-between px-5 pt-5 pb-1">
         <div className="flex flex-col gap-0.5">
           <div className="text-[13px] font-medium text-muted">Korean War</div>
@@ -110,11 +115,22 @@ export default function WarMapApp() {
           {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
           <p className="text-lg font-semibold">{current ? current.title : " "}</p>
         </div>
-        {current && (
-          <div className="mt-0.5 rounded-full border border-rule bg-white px-3 py-1.5 text-[13px] font-medium tabular-nums">
-            {index + 1} / {slots.length}
-          </div>
-        )}
+        <div className="mt-0.5 flex items-center gap-1.5">
+          {/* 시기와 상관없는 글이라, 스냅샷마다 바뀌는 날짜·제목 옆이 아니라 앱 이름 줄에 늘 둔다 */}
+          <button
+            type="button"
+            onClick={() => setStoriesOpen(true)}
+            className="inline-flex items-center gap-1 rounded-full border border-ink bg-white px-3 py-1.5 text-[13px] font-semibold"
+          >
+            <BookIcon />
+            이야기
+          </button>
+          {current && (
+            <div className="rounded-full border border-rule bg-white px-3 py-1.5 text-[13px] font-medium tabular-nums">
+              {index + 1} / {slots.length}
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="relative min-h-0 flex-1">
@@ -171,7 +187,24 @@ export default function WarMapApp() {
           )}
         </section>
       )}
+
+      {storiesOpen && <StoriesPanel onClose={() => setStoriesOpen(false)} />}
     </main>
+  );
+}
+
+// 펼친 책. 직접 그린 단순한 도형이다 (CLAUDE.md 4장: 남의 아이콘 세트는 쓰지 않는다)
+function BookIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <path
+        d="M7 3.5C5.6 2.6 3.7 2.3 1.5 2.5v8c2.2-.2 4.1.1 5.5 1 1.4-.9 3.3-1.2 5.5-1v-8c-2.2-.2-4.1.1-5.5 1Zm0 0v8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

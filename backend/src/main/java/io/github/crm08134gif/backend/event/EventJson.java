@@ -18,7 +18,6 @@ public record EventJson(
     String region, // 지도 가장자리: north 소련, east 미국, west 중국
     String kind,
     String summary,
-    List<Toon> toons, // 카드 맨 위의 웹툰 그림. 없으면 뺀다(null)
     Photo photo,
     List<Block> body,
     List<SourceRef> sources,
@@ -48,10 +47,6 @@ public record EventJson(
 
     // 본문 사진. file은 data/photos/photos.csv에 있는 파일 이름
     public record PhotoBlock(String file, String caption) implements Block {
-    }
-
-    // 웹툰 그림 한 장. file은 data/toons/의 파일 이름, alt는 그림에 쓰인 글을 옮긴 대체 텍스트
-    public record Toon(String file, String alt) {
     }
 
     // 대표 사진 (카드 위쪽, 없어도 된다)

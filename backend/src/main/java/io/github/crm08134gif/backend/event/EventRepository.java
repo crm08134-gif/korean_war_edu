@@ -19,7 +19,6 @@ public class EventRepository {
                    e.region,
                    e.kind,
                    e.summary,
-                   e.toons,
                    e.photo_file,
                    e.photo_caption,
                    e.body,

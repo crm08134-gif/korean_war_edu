@@ -68,9 +68,4 @@ tasks.named('processResources') {
         exclude 'photos.csv', 'README.md'
         into 'static/photos'
     }
-    // 사건 카드 맨 위의 웹툰 그림은 static/toons/ 로 복사한다 (/toons/<파일>로 내려받는다)
-    from('../data/toons') {
-        exclude 'README.md'
-        into 'static/toons'
-    }
 }

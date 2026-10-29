@@ -16,8 +16,6 @@ const nextConfig: NextConfig = {
       { source: "/api/:path*", destination: `${backendUrl}/api/:path*` },
       // 사건 카드 사진 (data/photos/). 백엔드가 jar 안의 static/photos/에서 내준다
       { source: "/photos/:path*", destination: `${backendUrl}/photos/:path*` },
-      // 사건 카드 웹툰 그림 (data/toons/). 사진과 같이 백엔드가 static/toons/에서 내준다
-      { source: "/toons/:path*", destination: `${backendUrl}/toons/:path*` },
     ];
   },
   turbopack: {

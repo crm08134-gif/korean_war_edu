@@ -33,14 +33,11 @@ export default function Timeline({
       </div>
 
       <div className="relative h-7">
-        <div className="absolute inset-x-0 top-[13px] h-0.5 rounded-full bg-rule-soft" />
+        <div className="absolute inset-x-0 top-2.5 h-2 rounded-full bg-fill" />
         <div
-          className="absolute left-0 top-[13px] h-0.5 rounded-full bg-ink transition-[width] duration-700"
+          className="absolute left-0 top-2.5 h-2 rounded-full bg-ink transition-[width] duration-700"
           style={{ width: warIndex < 0 ? "0%" : percent(snapshots[warIndex].snapshotDate) }}
         />
-        {YEARS.map((year) => (
-          <div key={year} className="absolute top-[7px] h-3.5 w-px bg-rule" style={{ left: percent(year) }} />
-        ))}
         {snapshots.map((snapshot, i) => (
           <button
             key={snapshot.snapshotDate}
@@ -51,9 +48,7 @@ export default function Timeline({
             className="absolute top-3.5 -ml-3 -mt-3 flex size-6 items-center justify-center"
             style={{ left: percent(snapshot.snapshotDate) }}
           >
-            <span
-              className={dotClass(i === warIndex, i < warIndex)}
-            />
+            <span className={dotClass(i === warIndex, i < warIndex ? "bg-white" : "bg-dot")} />
           </button>
         ))}
       </div>
@@ -84,7 +79,7 @@ export default function Timeline({
             aria-current={index === 0 ? "step" : undefined}
             className="absolute top-3.5 left-1/2 -ml-3 -mt-3 flex size-6 items-center justify-center"
           >
-            <span className={dotClass(index === 0, index > 0)} />
+            <span className={dotClass(index === 0, index > 0 ? "bg-ink" : "bg-dot")} />
           </button>
         </div>
         <span className="h-3.5 text-center text-[11px] leading-[14px] whitespace-nowrap text-muted">개전 전</span>
@@ -94,10 +89,8 @@ export default function Timeline({
   );
 }
 
-function dotClass(current: boolean, passed: boolean): string {
-  return current
-    ? "size-4 rounded-full border-[3px] border-ink bg-white"
-    : passed
-      ? "size-1.5 rounded-full bg-ink"
-      : "size-1.5 rounded-full bg-dot";
+// 지금 칸은 흰 손잡이, 나머지는 작은 점. 점 색은 뒤에 깔린 줄에 맞춰 부르는 쪽이 정한다
+// (지나온 칸은 검정 줄 위라 흰 점, "개전 전" 칸은 줄 밖이라 검정 점)
+function dotClass(current: boolean, color: string): string {
+  return current ? "size-[22px] rounded-full bg-white shadow-[0_1px_6px_rgba(26,29,33,0.3)]" : `size-1.5 rounded-full ${color}`;
 }

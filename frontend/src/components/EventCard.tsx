@@ -14,33 +14,39 @@ import {
 } from "@/lib/events";
 import type { Story } from "@/lib/stories";
 
-// 하단 패널 자리에 들어가는 사건 카드. 닫으면 다시 타임라인 패널로 돌아간다
+// 사건 카드. 2~3분 읽을거리라 지도를 덮고 화면 전체로 연다. 닫으면 보던 지도로 돌아간다
 export default function EventCard({ event, onClose }: { event: WarEvent; onClose: () => void }) {
   return (
-    <ContentCard
-      content={event}
-      meta={
-        <>
-          <KindIcon kind={event.kind} size={14} />
-          {KIND_LABEL[event.kind]} · {formatEventDate(event)} · {event.placeName}
-        </>
-      }
-      onClose={onClose}
-    />
+    <div role="dialog" aria-modal="true" aria-label={event.title} className="absolute inset-0 z-10 flex flex-col bg-white">
+      <div className="flex items-center px-3 py-2">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="사건 카드 닫고 지도로"
+          className="flex size-11 items-center justify-center rounded-full bg-fill"
+        >
+          <BackIcon />
+        </button>
+      </div>
+      {/* 다른 사건을 열면 맨 위부터 읽도록 스크롤 칸을 새로 만든다 */}
+      <div key={event.id} className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))]">
+        <ContentCard
+          content={event}
+          meta={
+            <>
+              <KindIcon kind={event.kind} size={14} />
+              {KIND_LABEL[event.kind]} · {formatEventDate(event)} · {event.placeName}
+            </>
+          }
+        />
+      </div>
+    </div>
   );
 }
 
 // 사건 카드와 전쟁 속 이야기 카드가 함께 쓰는 몸통: 제목, 대표 사진, 요약, 본문, 출처 목록.
-// onClose가 없으면 닫기 버튼을 그리지 않는다 (이야기 화면은 머리말에 따로 있다)
-export function ContentCard({
-  content,
-  meta,
-  onClose,
-}: {
-  content: WarEvent | Story;
-  meta: React.ReactNode;
-  onClose?: () => void;
-}) {
+// 닫기 버튼은 감싸는 화면(EventCard, StoriesPanel)의 머리말에 있다
+export function ContentCard({ content, meta }: { content: WarEvent | Story; meta: React.ReactNode }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   // 사건 카드와 이야기 카드가 한 화면에 함께 있을 수 있어 제목 id를 겹치지 않게 만든다
   const headingId = useId();
@@ -54,36 +60,24 @@ export function ContentCard({
   const photoMeta = new Map(content.photos.map((photo) => [photo.file, photo]));
 
   return (
-    <article aria-labelledby={headingId} className="flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <p className="flex items-center gap-1 text-xs text-muted tabular-nums">{meta}</p>
-          <h2
-            id={headingId}
-            ref={headingRef}
-            tabIndex={-1}
-            className="font-serif text-xl font-semibold tracking-tight outline-none"
-          >
-            {content.title}
-          </h2>
-        </div>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="사건 카드 닫기"
-            className="-mt-1.5 -mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted"
-          >
-            <CloseIcon />
-          </button>
-        )}
+    <article aria-labelledby={headingId} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5 pt-2">
+        <p className="flex items-center gap-1 text-[13px] font-medium text-muted tabular-nums">{meta}</p>
+        <h2
+          id={headingId}
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-[28px] leading-tight font-extrabold tracking-tight outline-none"
+        >
+          {content.title}
+        </h2>
       </div>
 
       {content.photoFile && content.photoCaption && (
         <Photo file={content.photoFile} caption={content.photoCaption} meta={photoMeta.get(content.photoFile)} />
       )}
 
-      <p className="text-[15px] leading-relaxed font-semibold">{content.summary}</p>
+      <p className="rounded-2xl bg-fill px-4 py-3.5 text-[15px] leading-[1.7] font-medium">{content.summary}</p>
 
       {content.body.map((block, i) =>
         block.type === "photo" ? (
@@ -94,8 +88,8 @@ export function ContentCard({
       )}
 
       {/* 출처 목록. 주장마다 근거를 달지 않고 글 전체의 출처를 한 줄씩 적는다 */}
-      <footer className="mt-2 flex flex-col gap-1 border-t border-rule-soft pt-3 text-xs leading-relaxed text-muted">
-        <h3 className="font-semibold">출처</h3>
+      <footer className="mt-4 flex flex-col gap-1.5 border-t border-fill pt-4 text-xs leading-relaxed text-muted">
+        <h3 className="font-bold">출처</h3>
         <ul className="flex flex-col gap-0.5">
           {content.sources.map((source, i) => (
             <li key={i}>
@@ -105,6 +99,21 @@ export function ContentCard({
         </ul>
       </footer>
     </article>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 12 12" aria-hidden="true">
+      <path
+        d="M7.5 2.5 4 6l3.5 3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -119,50 +128,60 @@ export function CloseIcon() {
 function BodyBlock({ block }: { block: Exclude<Block, { type: "photo" }> }) {
   switch (block.type) {
     case "heading":
-      return <h3 className="mt-2 text-base font-semibold">{block.text}</h3>;
+      return <h3 className="mt-3 text-xl font-extrabold tracking-tight">{block.text}</h3>;
     case "paragraph":
-      return <p className="text-[15px] leading-relaxed">{block.text}</p>;
+      return <p className="text-base leading-[1.8]">{block.text}</p>;
     case "table":
       return <BodyTable table={block} />;
   }
 }
 
-// 폰 폭을 넘는 표는 표만 옆으로 밀어 본다
+// 폰 폭에서는 여러 칸 표가 너무 좁아서, 행마다 흰 칸 하나로 쌓는다.
+// 첫 열은 칸 제목, 나머지 열은 그 아래에 열 이름과 함께 놓는다 (값이 둘이면 나란히, 셋 이상이면 세로로).
+// 화면 읽기 프로그램에는 그대로 표로 읽히도록 table 요소의 display만 바꾼다
 function BodyTable({ table }: { table: TableBlock }) {
+  const values = table.columns.length - 1;
+  // 열이 둘(예: 날짜 · 일)이면 값 열 이름은 뻔해서 적지 않는다
+  const showLabels = values >= 2;
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="-mx-5 overflow-x-auto px-5">
-        <table className="w-full border-collapse text-sm tabular-nums">
-          {table.caption && <caption className="pb-1.5 text-left font-semibold">{table.caption}</caption>}
-          <thead>
-            <tr className="border-b border-ink">
-              {table.columns.map((column, i) => (
-                <th key={i} scope="col" className="px-2 py-1.5 text-left font-semibold whitespace-nowrap first:pl-0">
-                  {column}
-                </th>
+    <div className="flex flex-col rounded-2xl bg-fill p-1.5">
+      <table className="block text-sm tabular-nums">
+        {table.caption && (
+          <caption className="block px-2.5 pt-2 pb-2.5 text-left text-[15px] font-extrabold">{table.caption}</caption>
+        )}
+        <thead className="sr-only">
+          <tr>
+            {table.columns.map((column, i) => (
+              <th key={i} scope="col">
+                {column}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="flex flex-col gap-1.5">
+          {table.rows.map((row, i) => (
+            <tr
+              key={i}
+              className={`grid gap-x-3 gap-y-2 rounded-xl bg-white px-3 py-3 ${values === 2 ? "grid-cols-2" : "grid-cols-1"}`}
+            >
+              <th scope="row" className="col-span-full text-left text-[13px] font-bold">
+                {row[0]}
+              </th>
+              {row.slice(1).map((cell, j) => (
+                <td key={j} className="flex flex-col gap-0.5 leading-snug">
+                  {showLabels && (
+                    <span aria-hidden="true" className="text-[11px] font-medium text-muted">
+                      {table.columns[j + 1]}
+                    </span>
+                  )}
+                  <span className={cell === "—" ? "text-muted" : ""}>{cell}</span>
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {table.rows.map((row, i) => (
-              <tr key={i} className="border-b border-rule-soft">
-                {row.map((cell, j) =>
-                  j === 0 ? (
-                    <th key={j} scope="row" className="py-1.5 pr-2 text-left font-medium">
-                      {cell}
-                    </th>
-                  ) : (
-                    <td key={j} className="px-2 py-1.5">
-                      {cell}
-                    </td>
-                  ),
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {table.note && <p className="text-xs text-muted">{table.note}</p>}
+          ))}
+        </tbody>
+      </table>
+      {table.note && <p className="px-2.5 pt-2 pb-1.5 text-xs text-muted">{table.note}</p>}
     </div>
   );
 }
@@ -170,17 +189,17 @@ function BodyTable({ table }: { table: TableBlock }) {
 // 사진과 그 바로 아래 출처 표기 (CLAUDE.md 0장). 예: "사진: 미 육군 통신대 / NARA · 제목 · 퍼블릭 도메인"
 function Photo({ file, caption, meta }: { file: string; caption: string; meta: PhotoMeta | undefined }) {
   return (
-    <figure className="flex flex-col gap-1.5">
+    <figure className="-mx-5 flex flex-col gap-1.5">
       {/* 사진은 미리 줄여 두고(data/photos/README.md) Next 이미지 최적화(sharp)는 쓰지 않는다 */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`/photos/${encodeURIComponent(file)}`}
         alt={caption}
         loading="lazy"
-        className="w-full rounded-[10px] bg-sea"
+        className="w-full bg-sea"
       />
-      <figcaption className="flex flex-col gap-0.5">
-        <span className="text-sm">{caption}</span>
+      <figcaption className="flex flex-col gap-0.5 px-5">
+        <span className="text-[13px] leading-relaxed">{caption}</span>
         {meta && <PhotoCredit meta={meta} />}
       </figcaption>
     </figure>

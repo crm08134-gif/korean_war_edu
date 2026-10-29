@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/noto-sans-kr";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 

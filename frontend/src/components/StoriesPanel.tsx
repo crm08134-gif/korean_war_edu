@@ -53,7 +53,7 @@ export default function StoriesPanel({ onClose }: { onClose: () => void }) {
       aria-label="전쟁 속 이야기"
       className="absolute inset-0 z-20 flex flex-col bg-white"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-rule-soft px-5 pt-5 pb-3">
+      <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-3">
         {selected ? (
           <button
             type="button"
@@ -73,7 +73,7 @@ export default function StoriesPanel({ onClose }: { onClose: () => void }) {
             목록
           </button>
         ) : (
-          <h2 ref={titleRef} tabIndex={-1} className="font-serif text-[22px] font-semibold tracking-tight outline-none">
+          <h2 ref={titleRef} tabIndex={-1} className="text-[22px] font-extrabold tracking-tight outline-none">
             전쟁 속 이야기
           </h2>
         )}
@@ -121,13 +121,13 @@ function StoryTile({ story, onSelect }: { story: Story; onSelect: () => void }) 
           src={`/photos/${encodeURIComponent(story.photoFile)}`}
           alt=""
           loading="lazy"
-          className="aspect-video w-full rounded-[10px] bg-sea object-cover"
+          className="aspect-video w-full rounded-xl bg-sea object-cover"
         />
       ) : (
         <NoPhoto />
       )}
       {meta && <ThumbnailCredit meta={meta} />}
-      <span className="mt-0.5 line-clamp-2 text-[15px] leading-snug font-semibold">{story.title}</span>
+      <span className="mt-0.5 line-clamp-2 text-[15px] leading-snug font-bold">{story.title}</span>
       <span className="line-clamp-2 text-xs leading-snug text-muted">{story.summary}</span>
     </button>
   );
@@ -148,7 +148,7 @@ function ThumbnailCredit({ meta }: { meta: PhotoMeta }) {
 // 허용 목록 안에서 쓸 사진을 찾지 못한 이야기는 사진 대신 빈 칸을 둔다
 function NoPhoto() {
   return (
-    <span className="flex aspect-video w-full items-center justify-center rounded-[10px] bg-sea text-muted">
+    <span className="flex aspect-video w-full items-center justify-center rounded-xl bg-sea text-muted">
       <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
         <path
           d="M6 5h11l5 5v13H6z M17 5v5h5 M10 14h8 M10 18h8"

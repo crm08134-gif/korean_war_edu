@@ -5,11 +5,55 @@ import { useEffect, useRef, useState } from "react";
 import { KIND_LABEL, kindIconSvg } from "@/lib/event-kinds";
 import type { WarEvent } from "@/lib/events";
 import { easeInOutCubic, interpolateLine } from "@/lib/geometry";
-import { EMPTY_DATA, KOREA_BOUNDS, MAP_STYLE, MAX_BOUNDS, extraData, warData } from "@/lib/map-style";
+import {
+  EMPTY_DATA,
+  KOREA_BOUNDS,
+  MAP_STYLE,
+  SAFE_BOUNDS,
+  VIEW_LIMIT_BOUNDS,
+  extraData,
+  warData,
+} from "@/lib/map-style";
 import type { Position, Snapshot } from "@/lib/snapshots";
 
 // 전선이 다음 스냅샷으로 옮겨 가는 시간
 const MOVE_MS = 1200;
+
+// MapLibre의 줌 0 세계 크기(px). 줌이 1 오르면 두 배가 된다
+const WORLD_PX = 512;
+
+// 경위도 ↔ 웹 메르카토르 좌표(0~1)
+const mercX = (lon: number) => (lon + 180) / 360;
+const mercY = (lat: number) => {
+  const sin = Math.sin((lat * Math.PI) / 180);
+  return 0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI);
+};
+const lonOf = (x: number) => x * 360 - 180;
+const latOf = (y: number) => (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
+
+// 가장 많이 축소했을 때 VIEW_LIMIT_BOUNDS가 지도 칸에 딱 들어오게 최소 줌과 끌 수 있는 범위를 정한다.
+// 지도 칸 크기가 바뀔 때마다 다시 부른다
+function applyViewLimit(map: MapLibreMap) {
+  const camera = map.cameraForBounds(VIEW_LIMIT_BOUNDS);
+  if (camera?.zoom === undefined) {
+    return;
+  }
+  // 그 줌에서 경계의 가운데를 볼 때 화면에 보이는 범위. 지도 칸이 경계보다 길쭉하면 한쪽이 더 보인다
+  const { width, height } = map.getContainer().getBoundingClientRect();
+  const [[west, south], [east, north]] = VIEW_LIMIT_BOUNDS;
+  const cx = (mercX(west) + mercX(east)) / 2;
+  const cy = (mercY(south) + mercY(north)) / 2;
+  const world = WORLD_PX * 2 ** camera.zoom;
+  const halfX = width / 2 / world + 1e-6;
+  const halfY = height / 2 / world + 1e-6;
+  // 끌어도 이 범위 밖으로 나가지 않는다. 다만 바다 덮개가 덮는 안전 범위를 넘지 않게 자른다
+  // (아주 넓은 창에서는 잘린 만큼 최소 줌이 조금 커진다)
+  map.setMaxBounds([
+    [Math.max(lonOf(cx - halfX), SAFE_BOUNDS.west), Math.max(latOf(cy + halfY), SAFE_BOUNDS.south)],
+    [Math.min(lonOf(cx + halfX), SAFE_BOUNDS.east), Math.min(latOf(cy - halfY), SAFE_BOUNDS.north)],
+  ]);
+  map.setMinZoom(camera.zoom);
+}
 
 function source(map: MapLibreMap, id: string): GeoJSONSource {
   return map.getSource<GeoJSONSource>(id)!;
@@ -88,8 +132,7 @@ export default function FrontlineMap({
         bounds: KOREA_BOUNDS,
         // 아래쪽은 범례 자리만큼 비운다
         fitBoundsOptions: { padding: { top: 12, right: 12, bottom: 44, left: 12 } },
-        maxBounds: MAX_BOUNDS,
-        minZoom: 4,
+        // 최소 줌과 끌 수 있는 범위는 지도 칸 크기에 맞춰 applyViewLimit이 정한다
         maxZoom: 9,
         dragRotate: false,
         pitchWithRotate: false,
@@ -100,6 +143,9 @@ export default function FrontlineMap({
       });
       map.touchZoomRotate.disableRotation();
       map.keyboard.disableRotation();
+      applyViewLimit(map);
+      // 창 크기나 폰 방향이 바뀌면 지도 칸 크기도 바뀐다
+      map.on("resize", () => applyViewLimit(map!));
       map.on("load", () => {
         mapRef.current = map;
         setReady(true);

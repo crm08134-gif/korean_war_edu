@@ -19,11 +19,20 @@ export const KOREA_BOUNDS: LngLatBoundsLike = [
   [131.862522, 43.01027],
 ];
 
-// 화면이 틀(FRAME) 밖을 보여 주지 않도록 틀보다 조금 안쪽으로 묶는다
-export const MAX_BOUNDS: LngLatBoundsLike = [
-  [FRAME.west + 2, FRAME.south + 1],
-  [FRAME.east - 2, FRAME.north - 1],
+// 가장 많이 축소했을 때 보이는 범위: 한반도와 둘레(중국 동북부·산둥 반도, 일본 서쪽 해안).
+// 화면 크기마다 이 범위가 딱 들어오는 줌을 계산해 최소 줌으로 쓴다 (FrontlineMap)
+export const VIEW_LIMIT_BOUNDS: [[number, number], [number, number]] = [
+  [118.5, 30],
+  [137, 45],
 ];
+
+// 화면이 틀(FRAME) 밖을 보여 주지 않도록 틀보다 조금 안쪽으로 묶는다. 끌 수 있는 범위는 이 안에서 정한다
+export const SAFE_BOUNDS = {
+  west: FRAME.west + 2,
+  south: FRAME.south + 1,
+  east: FRAME.east - 2,
+  north: FRAME.north - 1,
+} as const;
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 

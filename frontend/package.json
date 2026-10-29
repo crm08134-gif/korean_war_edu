@@ -12,6 +12,7 @@
     "icons": "node scripts/make-app-icons.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/noto-sans-kr": "5.3.1",
     "maplibre-gl": "6.15.0",
     "next": "16.4.2",
     "react": "19.3.0",

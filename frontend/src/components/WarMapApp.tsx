@@ -6,7 +6,8 @@ import FrontlineMap from "@/components/FrontlineMap";
 import KindIcon from "@/components/KindIcon";
 import StoriesPanel from "@/components/StoriesPanel";
 import Timeline from "@/components/Timeline";
-import { eventsBetween, fetchEvents, formatStartDate, prewarEvents, type WarEvent } from "@/lib/events";
+import { KIND_LABEL } from "@/lib/event-kinds";
+import { eventsBetween, fetchEvents, formatEventDate, formatStartDate, prewarEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
 import { fetchSnapshots, formatDate, type Snapshot } from "@/lib/snapshots";
 
@@ -106,30 +107,26 @@ export default function WarMapApp() {
 
   return (
     <main className="relative mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
-      <header className="flex items-start justify-between px-5 pt-5 pb-1">
-        <div className="flex flex-col gap-0.5">
-          <div className="text-[13px] font-medium text-muted">Korean War</div>
-          <h1 className="font-serif text-[26px] font-semibold tracking-tight tabular-nums">
-            {heading}
-          </h1>
-          {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
-          <p className="text-lg font-semibold">{current ? current.title : " "}</p>
-        </div>
-        <div className="mt-0.5 flex items-center gap-1.5">
-          {/* 시기와 상관없는 글이라, 스냅샷마다 바뀌는 날짜·제목 옆이 아니라 앱 이름 줄에 늘 둔다 */}
+      {/* 지도 위에 뜬 흰 머리말 카드: 날짜·몇 번째 칸, 스냅샷 이름, 이야기 버튼 */}
+      <header className="px-3 pt-3 pb-1">
+        <div className="flex items-center justify-between gap-3 rounded-[18px] bg-white py-2.5 pr-2.5 pl-4 shadow-[0_2px_12px_rgba(26,29,33,0.08)]">
+          <div className="flex min-w-0 flex-col">
+            <p className="text-xs font-medium text-muted tabular-nums">
+              {heading}
+              {current && ` · ${index + 1}/${slots.length}`}
+            </p>
+            {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
+            <h1 className="truncate text-xl font-extrabold tracking-tight">{current ? current.title : " "}</h1>
+          </div>
+          {/* 시기와 상관없는 글이라 스냅샷과 상관없이 늘 같은 자리에 둔다 */}
           <button
             type="button"
             onClick={() => setStoriesOpen(true)}
-            className="inline-flex items-center gap-1 rounded-full border border-ink bg-white px-3 py-1.5 text-[13px] font-semibold"
+            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-bold text-white"
           >
             <BookIcon />
             이야기
           </button>
-          {current && (
-            <div className="rounded-full border border-rule bg-white px-3 py-1.5 text-[13px] font-medium tabular-nums">
-              {index + 1} / {slots.length}
-            </div>
-          )}
         </div>
       </header>
 
@@ -156,37 +153,43 @@ export default function WarMapApp() {
       </div>
 
       {current && (
-        <section
-          className={`flex flex-col gap-4 rounded-t-[20px] border-t border-rule-soft bg-white px-5 pt-[18px] pb-[calc(24px+env(safe-area-inset-bottom))] ${
-            selected ? "max-h-[65dvh] overflow-y-auto" : ""
-          }`}
-        >
-          {selected ? (
-            <EventCard event={selected} onClose={() => setSelectedId(null)} />
-          ) : (
-            <>
-              {visibleEvents.length > 0 && <EventChips events={visibleEvents} onSelect={setSelectedId} />}
+        <section className="flex flex-col gap-4 rounded-t-[28px] bg-white px-5 pt-5 pb-[calc(24px+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(26,29,33,0.12)]">
+          {visibleEvents.length > 0 && <EventChips events={visibleEvents} onSelect={setSelectedId} />}
 
-              <Timeline snapshots={snapshots} hasPrewar={hasPrewar} index={index} onSelect={goTo} />
+          <Timeline snapshots={snapshots} hasPrewar={hasPrewar} index={index} onSelect={goTo} />
 
-              <div className="grid grid-cols-2 gap-3">
-                <StepButton
-                  direction="prev"
-                  label={index > 0 ? slots[index - 1].title : "처음입니다"}
-                  disabled={index === 0}
-                  onClick={() => goTo(index - 1)}
-                />
-                <StepButton
-                  direction="next"
-                  label={index < last ? slots[index + 1].title : "마지막입니다"}
-                  disabled={index === last}
-                  onClick={() => goTo(index + 1)}
-                />
-              </div>
-            </>
-          )}
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => goTo(index - 1)}
+              disabled={index === 0}
+              aria-label={index > 0 ? `이전 스냅샷 ${slots[index - 1].title}` : "처음입니다"}
+              className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-fill disabled:opacity-45"
+            >
+              <Chevron flip />
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo(index + 1)}
+              disabled={index === last}
+              aria-label={index < last ? `다음 스냅샷 ${slots[index + 1].title}` : "마지막입니다"}
+              className="flex h-[52px] min-w-0 flex-1 items-center justify-between gap-3 rounded-full bg-ink px-5 text-white disabled:opacity-45"
+            >
+              <span className="flex min-w-0 flex-col items-start">
+                <span className="text-[11px] text-dot tabular-nums">
+                  {index < last ? `다음 · ${formatDate(slots[index + 1].snapshotDate)}` : "다음"}
+                </span>
+                <span className="max-w-full truncate text-[15px] font-bold">
+                  {index < last ? slots[index + 1].title : "마지막입니다"}
+                </span>
+              </span>
+              <Chevron />
+            </button>
+          </div>
         </section>
       )}
+
+      {selected && <EventCard event={selected} onClose={() => setSelectedId(null)} />}
 
       {storiesOpen && <StoriesPanel onClose={() => setStoriesOpen(false)} />}
     </main>
@@ -214,21 +217,32 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-// 폰에서는 지도 위 작은 마커를 누르기 어려워서, 같은 사건을 칩으로도 보여 준다
+// 폰에서는 지도 위 작은 마커를 누르기 어려워서, 같은 사건을 가로로 넘기는 칩으로도 보여 준다.
+// 칩에는 사진 대신 종류 아이콘을 쓴다 (사진을 쓰면 바로 아래 출처 표기가 필요하다, CLAUDE.md 0장)
 function EventChips({ events, onSelect }: { events: WarEvent[]; onSelect: (id: string) => void }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-xs font-medium text-muted">이 시기의 사건 {events.length}</p>
-      <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5">
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[15px] font-bold">이 시기의 사건</h2>
+        <span className="text-xs text-muted tabular-nums">{events.length}건</span>
+      </div>
+      <div className="-mx-5 flex gap-2.5 overflow-x-auto px-5 [scrollbar-width:none]">
         {events.map((event) => (
           <button
             key={event.id}
             type="button"
             onClick={() => onSelect(event.id)}
-            className="flex h-11 shrink-0 items-center gap-1.5 rounded-full border border-rule bg-white pr-3.5 pl-3 text-sm font-medium"
+            className="flex shrink-0 items-center gap-2.5 rounded-2xl bg-fill py-2 pr-4 pl-2 text-left"
           >
-            <KindIcon kind={event.kind} />
-            {event.title}
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white">
+              <KindIcon kind={event.kind} size={20} />
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[11px] font-medium whitespace-nowrap text-muted tabular-nums">
+                {KIND_LABEL[event.kind]} · {formatEventDate(event)}
+              </span>
+              <span className="text-[15px] font-bold whitespace-nowrap">{event.title}</span>
+            </span>
           </button>
         ))}
       </div>
@@ -238,42 +252,10 @@ function EventChips({ events, onSelect }: { events: WarEvent[]; onSelect: (id: s
 
 function Legend({ swatch, children }: { swatch: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-medium">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/85 px-2.5 py-1 text-xs font-medium">
       {swatch}
       {children}
     </span>
-  );
-}
-
-function StepButton({
-  direction,
-  label,
-  disabled,
-  onClick,
-}: {
-  direction: "prev" | "next";
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  const next = direction === "next";
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={`${next ? "다음" : "이전"} 스냅샷 ${label}`}
-      className={`flex h-14 flex-col justify-center gap-0.5 rounded-[14px] border px-3.5 disabled:opacity-45 ${
-        next ? "items-end border-ink bg-ink text-white" : "items-start border-rule bg-white text-ink"
-      }`}
-    >
-      <span className={`inline-flex items-center gap-1 text-xs ${next ? "text-rule" : "text-muted"}`}>
-        {!next && <Chevron flip />}
-        {next ? "다음" : "이전"}
-        {next && <Chevron />}
-      </span>
-      <span className="max-w-full truncate text-[15px] font-semibold tabular-nums">{label}</span>
-    </button>
   );
 }
 

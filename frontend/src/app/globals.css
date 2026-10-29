@@ -8,7 +8,9 @@
   --color-rule-soft: #d5dae0;
   --color-dot: #b4bcc5;
   --color-sea: #e9edf1;
-  --font-sans: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --color-fill: #f2f4f6; /* 흰 화면 위의 옅은 회색 칸 (요약, 표, 사건 칩) */
+  /* Noto Sans KR(SIL OFL 1.1)은 @fontsource-variable 패키지로 앱과 함께 배포한다. 외부 글꼴 서버는 쓰지 않는다 */
+  --font-sans: "Noto Sans KR Variable", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
 body {

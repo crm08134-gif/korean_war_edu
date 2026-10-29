@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -27,7 +28,9 @@ import tools.jackson.dataformat.csv.CsvMapper;
 import tools.jackson.dataformat.csv.CsvReadFeature;
 import tools.jackson.dataformat.csv.CsvSchema;
 
+// 이야기 적재기(StoryLoader, @Order 2)가 이 적재기가 넣은 출처와 사진을 쓰므로 먼저 돈다
 @Component
+@Order(1)
 public class EventLoader implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(EventLoader.class);
     private static final String DIR = "classpath:events/";
@@ -75,6 +78,9 @@ public class EventLoader implements ApplicationRunner {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void run(ApplicationArguments args) throws IOException {
+        // 이야기(story 패키지)는 사진과 출처를 가리켜서, 그 둘을 지우기 전에 먼저 지워야 한다.
+        // 다시 넣는 것은 이 적재기 뒤에 도는 StoryLoader가 한다
+        jdbc.sql("DELETE FROM story").update();
         // 사건의 출처 목록(event_source)과 사진 목록(event_photo)은 ON DELETE CASCADE로 함께 지워진다
         jdbc.sql("DELETE FROM event").update();
         jdbc.sql("DELETE FROM source_doc").update();
@@ -157,13 +163,18 @@ public class EventLoader implements ApplicationRunner {
         if (!fileName.equals(e.date() + "-" + e.id() + ".json")) {
             throw new IllegalStateException("파일 이름이 <date>-<id>.json 과 다르다");
         }
-        if (e.sources() == null || e.sources().isEmpty()) {
+        checkContent(e.sources(), e.body());
+    }
+
+    // 사건과 이야기(StoryLoader)가 함께 쓰는 검사: 출처와 본문이 있어야 하고, 본문 블록이 비면 안 된다
+    public static void checkContent(List<EventJson.SourceRef> sources, List<EventJson.Block> body) {
+        if (sources == null || sources.isEmpty()) {
             throw new IllegalStateException("출처가 하나도 없다");
         }
-        if (e.body() == null || e.body().isEmpty()) {
+        if (body == null || body.isEmpty()) {
             throw new IllegalStateException("본문이 없다");
         }
-        for (EventJson.Block block : e.body()) {
+        for (EventJson.Block block : body) {
             switch (block) {
                 case EventJson.Heading h -> checkText(h.text());
                 case EventJson.Paragraph p -> checkText(p.text());
@@ -218,7 +229,7 @@ public class EventLoader implements ApplicationRunner {
                 .param("locator", source.locator())
                 .update();
         }
-        for (String file : photoFiles(e)) {
+        for (String file : photoFiles(photo, e.body())) {
             jdbc.sql("INSERT INTO event_photo (event_id, file) VALUES (:eventId, :file)")
                 .param("eventId", e.id())
                 .param("file", file)
@@ -226,13 +237,13 @@ public class EventLoader implements ApplicationRunner {
         }
     }
 
-    // 이 사건이 쓰는 사진: 대표 사진과 본문의 사진 블록
-    private static List<String> photoFiles(EventJson e) {
+    // 이 글이 쓰는 사진: 대표 사진과 본문의 사진 블록 (StoryLoader도 쓴다)
+    public static List<String> photoFiles(EventJson.Photo photo, List<EventJson.Block> body) {
         List<String> files = new ArrayList<>();
-        if (e.photo() != null) {
-            files.add(e.photo().file());
+        if (photo != null) {
+            files.add(photo.file());
         }
-        for (EventJson.Block block : e.body()) {
+        for (EventJson.Block block : body) {
             if (block instanceof EventJson.PhotoBlock p) {
                 files.add(p.file());
             }

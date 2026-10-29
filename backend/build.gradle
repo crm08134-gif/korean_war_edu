@@ -54,6 +54,11 @@ tasks.named('processResources') {
         include 'sources.csv', '*.json'
         into 'events'
     }
+    // 저장소 최상위 data/stories의 이야기 파일을 jar 안 stories/ 로 복사한다 (README.md는 빼고)
+    from('../data/stories') {
+        include '*.json'
+        into 'stories'
+    }
     // 사진 메타데이터는 photos/ 로, 사진 파일은 static/photos/ 로 복사한다 (static/ 아래는 /photos/<파일>로 내려받을 수 있다)
     from('../data/photos') {
         include 'photos.csv'

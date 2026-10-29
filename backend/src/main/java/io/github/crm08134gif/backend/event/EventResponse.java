@@ -15,6 +15,7 @@ record EventResponse (
     String region,
     String kind,
     String summary,
+    @JsonRawValue String toons, // 웹툰 그림 [{file, alt}]. 없으면 빈 배열
     String photoFile,
     String photoCaption,
     // DB가 만든 JSON 글자를 다시 감싸지 않고 그대로 내보낸다

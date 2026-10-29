@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CloseIcon, ContentCard } from "@/components/EventCard";
+import { LICENSE_LABEL, type PhotoMeta } from "@/lib/events";
 import { fetchStories, type Story } from "@/lib/stories";
 
 type Load = { status: "loading" } | { status: "error" } | { status: "ready"; stories: Story[] };
@@ -96,10 +97,10 @@ export default function StoriesPanel({ onClose }: { onClose: () => void }) {
         ) : stories.length === 0 ? (
           <Notice>아직 실린 이야기가 없습니다.</Notice>
         ) : (
-          <ul className="flex flex-col">
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3">
             {stories.map((story) => (
-              <li key={story.id} className="border-b border-rule-soft last:border-b-0">
-                <StoryRow story={story} onSelect={() => setSelectedId(story.id)} />
+              <li key={story.id}>
+                <StoryTile story={story} onSelect={() => setSelectedId(story.id)} />
               </li>
             ))}
           </ul>
@@ -109,13 +110,55 @@ export default function StoriesPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function StoryRow({ story, onSelect }: { story: Story; onSelect: () => void }) {
+// 목록 한 칸: 대표 사진 썸네일, 그 바로 아래 출처(CLAUDE.md 0장), 제목과 요약 첫머리
+function StoryTile({ story, onSelect }: { story: Story; onSelect: () => void }) {
+  const meta = story.photos.find((photo) => photo.file === story.photoFile);
   return (
-    // 목록에는 사진을 싣지 않는다. 사진은 바로 아래에 출처를 적어야 하는데(CLAUDE.md 0장) 목록에는 그 자리가 없다
-    <button type="button" onClick={onSelect} className="flex w-full flex-col gap-1 py-3.5 text-left">
-      <span className="text-base font-semibold">{story.title}</span>
-      <span className="line-clamp-2 text-sm leading-snug text-muted">{story.summary}</span>
+    <button type="button" onClick={onSelect} className="flex w-full flex-col gap-1 text-left">
+      {story.photoFile ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/photos/${encodeURIComponent(story.photoFile)}`}
+          alt=""
+          loading="lazy"
+          className="aspect-video w-full rounded-[10px] bg-sea object-cover"
+        />
+      ) : (
+        <NoPhoto />
+      )}
+      {meta && <ThumbnailCredit meta={meta} />}
+      <span className="mt-0.5 line-clamp-2 text-[15px] leading-snug font-semibold">{story.title}</span>
+      <span className="line-clamp-2 text-xs leading-snug text-muted">{story.summary}</span>
     </button>
+  );
+}
+
+// 목록에서는 링크 없이 짧게 적는다(원본·라이선스 링크는 카드의 사진 아래에 있다).
+// 썸네일은 16:9로 잘라 보이므로, 바꾼 것 표기에 자르기를 더한다
+function ThumbnailCredit({ meta }: { meta: PhotoMeta }) {
+  const license = LICENSE_LABEL[meta.license] ?? meta.license;
+  const modified = [meta.modified, "목록에서 자름"].filter(Boolean).join(", ");
+  return (
+    <span className="line-clamp-2 text-[10px] leading-tight text-muted">
+      사진: {meta.author} · {license} · {modified}
+    </span>
+  );
+}
+
+// 허용 목록 안에서 쓸 사진을 찾지 못한 이야기는 사진 대신 빈 칸을 둔다
+function NoPhoto() {
+  return (
+    <span className="flex aspect-video w-full items-center justify-center rounded-[10px] bg-sea text-muted">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+        <path
+          d="M6 5h11l5 5v13H6z M17 5v5h5 M10 14h8 M10 18h8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
   );
 }
 

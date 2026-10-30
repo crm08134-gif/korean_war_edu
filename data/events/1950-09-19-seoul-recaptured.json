@@ -29,5 +29,55 @@
     {"sourceId": "cmh-appleman", "locator": "26장, 28장"},
     {"sourceId": "imhc-625-6", "locator": "3장 144~193쪽"}
   ],
+  "people": [
+    {
+      "personId": "park-jeong-mo",
+      "role": "국군 해병대 소대장 (소위)",
+      "description": "군사편찬연구소에 따르면 9월 27일 새벽 6시 10분, 그가 이끄는 국군 해병대 소대가 중앙청에 들어가 태극기를 올렸다. 미 육군 전사는 그날 오후 3시 8분 미 제5해병연대 G중대가 중앙청을 장악하고 성조기를 올렸다고 적어, 두 기록이 다르다. 이튿날 미 해병대가 서울 북동쪽까지 소탕하면서 서울을 완전히 되찾았다.",
+      "sources": [
+        {
+          "sourceId": "imhc-625-6",
+          "locator": "3장 144~193쪽"
+        },
+        {
+          "sourceId": "cmh-appleman",
+          "locator": "26장, 28장"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "personId": "macarthur",
+      "role": "유엔군사령관",
+      "description": "9월 26일 서울을 되찾았다고 발표했지만, 실제 시가전은 그 뒤로도 이틀 넘게 이어졌다. 9월 29일 정오 중앙청 국회의사당에서 이승만 대통령과 함께 정부가 서울로 돌아오는 환도식에 참석했다. 그가 구상한 인천 상륙에서 서울 수복까지, 유엔군과 국군의 인명 손실은 미 육군 전사 기준 약 3,500명이었다.",
+      "sources": [
+        {
+          "sourceId": "cmh-appleman",
+          "locator": "26장, 28장"
+        },
+        {
+          "sourceId": "imhc-625-6",
+          "locator": "3장 144~193쪽"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "personId": "syngman-rhee",
+      "role": "대한민국 대통령",
+      "description": "9월 29일 정오 중앙청 국회의사당에서 맥아더 사령관이 참석한 가운데 환도식을 열었다. 정부는 이날 오후부터 서울에서 다시 일을 시작했다. 환도식이 열린 중앙청에는 이틀 전 국군 해병대가 태극기를 올렸다.",
+      "sources": [
+        {
+          "sourceId": "cmh-appleman",
+          "locator": "28장"
+        },
+        {
+          "sourceId": "imhc-625-6",
+          "locator": "3장 144~193쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

@@ -21,6 +21,7 @@ record EventResponse (
     @JsonRawValue String body,
     @JsonRawValue String sources,
     @JsonRawValue String photos,
+    @JsonRawValue String people,
     String status
 ) {
 }

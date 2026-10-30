@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import KindIcon from "@/components/KindIcon";
+import PeopleSheet from "@/components/PeopleSheet";
 import { KIND_LABEL } from "@/lib/event-kinds";
 import {
   LICENSE_LABEL,
@@ -16,9 +17,13 @@ import type { Story } from "@/lib/stories";
 
 // 사건 카드. 2~3분 읽을거리라 지도를 덮고 화면 전체로 연다. 닫으면 보던 지도로 돌아간다
 export default function EventCard({ event, onClose }: { event: WarEvent; onClose: () => void }) {
+  // 관련 인물 시트. 다른 사건을 열면 닫힌 채로 시작한다
+  const [peopleOpenFor, setPeopleOpenFor] = useState<string | null>(null);
+  const peopleOpen = peopleOpenFor === event.id;
+
   return (
     <div role="dialog" aria-modal="true" aria-label={event.title} className="absolute inset-0 z-10 flex flex-col bg-white">
-      <div className="flex items-center px-3 py-2">
+      <div className="flex items-center justify-between px-3 py-2">
         <button
           type="button"
           onClick={onClose}
@@ -27,6 +32,17 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
         >
           <BackIcon />
         </button>
+        {/* 인물이 없는 사건에는 버튼을 두지 않는다 */}
+        {event.people.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setPeopleOpenFor(event.id)}
+            className="flex h-11 items-center gap-1.5 rounded-full bg-fill px-4 text-sm font-bold"
+          >
+            <PeopleIcon />
+            관련 인물 {event.people.length}
+          </button>
+        )}
       </div>
       {/* 다른 사건을 열면 맨 위부터 읽도록 스크롤 칸을 새로 만든다 */}
       <div key={event.id} className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))]">
@@ -40,6 +56,7 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
           }
         />
       </div>
+      {peopleOpen && <PeopleSheet title={event.title} people={event.people} onClose={() => setPeopleOpenFor(null)} />}
     </div>
   );
 }
@@ -99,6 +116,17 @@ export function ContentCard({ content, meta }: { content: WarEvent | Story; meta
         </ul>
       </footer>
     </article>
+  );
+}
+
+function PeopleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="6" cy="5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M1.5 13.5c.6-2.6 2.3-4 4.5-4s3.9 1.4 4.5 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="11.5" cy="5.5" r="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M11.8 9.6c1.5.2 2.5 1.4 2.9 3.4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -206,7 +234,7 @@ function Photo({ file, caption, meta }: { file: string; caption: string; meta: P
   );
 }
 
-function PhotoCredit({ meta }: { meta: PhotoMeta }) {
+export function PhotoCredit({ meta }: { meta: PhotoMeta }) {
   const license = LICENSE_LABEL[meta.license] ?? meta.license;
   return (
     <span className="text-xs text-muted">
@@ -228,7 +256,7 @@ function PhotoCredit({ meta }: { meta: PhotoMeta }) {
 }
 
 // "미 육군 군사사 센터, South to the Naktong, North to the Yalu, 3장". 주소가 있으면 제목을 원본에 잇는다
-function SourceLine({ source }: { source: SourceRef }) {
+export function SourceLine({ source }: { source: SourceRef }) {
   const title = source.url ? (
     <a href={source.url} target="_blank" rel="noreferrer" className="underline underline-offset-2">
       {source.title}

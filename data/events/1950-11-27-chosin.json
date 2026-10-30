@@ -28,5 +28,27 @@
     {"sourceId": "cmh-mossman", "locator": "5장, 7장"},
     {"sourceId": "imhc-625-7", "locator": "5장 469~490쪽"}
   ],
+  "people": [
+    {
+      "personId": "oliver-p-smith",
+      "role": "미 제1해병사단장 (소장)",
+      "description": "11월 27일 밤 그의 사단은 유담리와 하갈우리 일대에서 중공군 제9병단에 둘러싸였다. 하갈우리에서는 짓다 만 활주로에 수송기를 내리게 해 12월 5일까지 부상자 약 4,300명을 실어 냈다. 해병대는 비행기로 빠지는 대신 장비를 가지고 육로로 내려가기로 하고 12월 6일 하갈우리를 떠나, 12월 11일 함흥 지역에 모두 들어왔다. 스미스는 바다를 향한 이 철수를 다른 방향으로의 공격이라고 표현했다.",
+      "sources": [
+        {
+          "sourceId": "cmh-mossman",
+          "locator": "5장, 7장"
+        },
+        {
+          "sourceId": "imhc-625-7",
+          "locator": "5장 469~490쪽"
+        },
+        {
+          "sourceId": "usmc-marfork-chosin",
+          "locator": "본문"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

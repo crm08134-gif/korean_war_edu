@@ -27,5 +27,23 @@
     {"sourceId": "cmh-appleman", "locator": "11장"},
     {"sourceId": "imhc-625-4", "locator": "3장 126~170쪽"}
   ],
+  "people": [
+    {
+      "personId": "william-f-dean",
+      "role": "미 제24사단장 (소장)",
+      "description": "대전을 끝까지 지킬 생각은 없었고 7월 19일 대전을 떠날 계획이었지만, 철수를 하루 늦췄다. 20일 북한군 전차가 시내로 들어오자 직접 로켓포 조를 이끌고 전차를 쫓았다. 한낮에 시내가 잠잠해지자 전방이 아직 버틴다고 판단했지만, 북한군은 이미 대전 뒤쪽 도로를 끊고 있었다. 철수 도중 부상병에게 줄 물을 찾으러 갔다가 일행과 떨어져 실종되었다.",
+      "sources": [
+        {
+          "sourceId": "cmh-appleman",
+          "locator": "11장"
+        },
+        {
+          "sourceId": "imhc-625-4",
+          "locator": "3장 126~170쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

@@ -26,5 +26,23 @@
     {"sourceId": "cmh-mossman", "locator": "10장"},
     {"sourceId": "imhc-625-8", "locator": "3장 100쪽, 152~160쪽, 189쪽"}
   ],
+  "people": [
+    {
+      "personId": "matthew-ridgway",
+      "role": "미 제8군사령관 (중장)",
+      "description": "1950년 12월 23일 워커 사령관이 차량 사고로 숨지자, 26일 새 미 제8군사령관으로 왔다. 1951년 1월 3일 새벽 중공군 제50군과 제39군이 서울 북쪽 교두보를 공격하자, 그날 낮 서울에서 철수하기로 했다. 부대를 온전히 지키며 물러나는 데 힘썼고, 중공군의 공세가 멈추자 1월 25일 국군과 유엔군은 다시 북쪽으로 반격을 시작했다.",
+      "sources": [
+        {
+          "sourceId": "cmh-mossman",
+          "locator": "10장"
+        },
+        {
+          "sourceId": "imhc-625-8",
+          "locator": "3장 100쪽, 152~160쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

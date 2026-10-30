@@ -26,5 +26,39 @@
     {"sourceId": "cmh-mossman", "locator": "8장"},
     {"sourceId": "imhc-625-7", "locator": "2장 226쪽, 6장 550~562쪽, 7장 595~610쪽"}
   ],
+  "people": [
+    {
+      "personId": "edward-almond",
+      "role": "미 제10군단장 (소장)",
+      "description": "흥남에서 사단을 하나씩 배에 태우고, 남은 부대가 점점 좁아지는 교두보를 지키는 방식으로 철수를 이끌었다. 12월 11일 철수 명령이 발표되었고 24일 철수를 마쳤다. 그가 보고한 철수 병력은 국군을 포함해 10만 5,000명이었다. 군인과 함께 흥남에서만 8만 6천 명이 넘는 피란민이 배로 남쪽에 갔다.",
+      "sources": [
+        {
+          "sourceId": "cmh-mossman",
+          "locator": "8장"
+        },
+        {
+          "sourceId": "imhc-625-7",
+          "locator": "6장 550~562쪽, 7장 595~610쪽"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "personId": "leonard-larue",
+      "role": "화물선 메러디스 빅토리호 선장",
+      "description": "흥남 앞바다에 정박한 메러디스 빅토리호에 피란민 1만 4천여 명을 태웠다. 원래 승객 12명을 태우도록 만든 배였다. 호위 없이 기뢰 지대를 지나 남쪽으로 갔고, 크리스마스이브에 부산에 닿았지만 받아 주지 않아 거제도로 가서 크리스마스에 피란민을 내렸다. 미 해사청에 따르면 항해 중 한 명도 잃지 않았고 아기 다섯이 태어났으며, 배는 뒤에 '용감한 배' 상을 받았다.",
+      "sources": [
+        {
+          "sourceId": "marad-meredith-victory",
+          "locator": "본문, 표창문"
+        },
+        {
+          "sourceId": "imhc-625-7",
+          "locator": "7장 595~610쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

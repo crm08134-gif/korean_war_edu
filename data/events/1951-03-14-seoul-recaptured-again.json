@@ -26,5 +26,23 @@
     {"sourceId": "cmh-mossman", "locator": "17장"},
     {"sourceId": "imhc-625-8", "locator": "4장 325~329쪽"}
   ],
+  "people": [
+    {
+      "personId": "matthew-ridgway",
+      "role": "미 제8군사령관 (중장)",
+      "description": "지평리 전투 뒤 다시 북쪽으로 나아가던 미 제8군을 이끌고 3월 7일 '리퍼 작전'을 시작했다. 군사편찬연구소는 그가 서울을 되찾는 것 자체보다 적 병력에 타격을 주는 데 무게를 두었다고 적었다. 서울을 되찾은 뒤인 3월 15일에는 서울 북쪽 고지를 잇는 링컨선까지만 나아가고, 그 너머로는 정찰만 하라고 명령했다.",
+      "sources": [
+        {
+          "sourceId": "cmh-mossman",
+          "locator": "17장"
+        },
+        {
+          "sourceId": "imhc-625-8",
+          "locator": "4장 325~329쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

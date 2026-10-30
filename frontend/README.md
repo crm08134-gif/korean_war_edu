@@ -30,7 +30,7 @@ PC의 3000번을 HTTPS 주소로 잠깐 열어 준다. 고정 주소 배포 전�
 ```bash
 npm run build
 npm run start                                   # 백엔드도 켜 둔다
-cloudflared tunnel --url http://localhost:3000  # 다른 터미널. https://….trycloudflare.com 주소가 나온다
+cloudflared tunnel --url http://127.0.0.1:3000  # 다른 터미널. https://….trycloudflare.com 주소가 나온다
 ```
 
 - cloudflared 설치(Windows): `winget install -e --id Cloudflare.cloudflared`

@@ -90,7 +90,7 @@
   - 커밋 메시지는 Conventional Commits(`feat:`, `fix:`, `docs:`, `chore:`). PR 제목도 같은 형식으로 쓴다(Squash merge가 PR 제목을 main 커밋 제목으로 쓴다).
   - main을 브랜치에 merge하지 않는다. 필요하면 rebase하거나 `git switch -C <브랜치> origin/main`으로 다시 만든다.
 - PR 본문은 `.github/pull_request_template.md` 칸에 맞춰 쓴다.
-- **이미 적용된 Flyway 마이그레이션(V1~V3)은 절대 고치지 않는다.** 다음 번호(V4 …)로 낸다.
+- **이미 적용된 Flyway 마이그레이션(V1~V8)은 절대 고치지 않는다.** 다음 번호(V9 …)로 낸다.
 - 시크릿과 `.env`는 커밋하지 않는다.
 - 검사는 한 곳에만 둔다. DB 제약이 막는 것은 적재기에서 다시 검사하지 않는다. 적재기는 DB가 못 하는 검사만 한다.
 - 화면을 바꾸면 사용자가 직접 확인할 수 있게 확인 방법(어느 스냅샷에서 무엇을 누르면 무엇이 보이는지)을 적는다.

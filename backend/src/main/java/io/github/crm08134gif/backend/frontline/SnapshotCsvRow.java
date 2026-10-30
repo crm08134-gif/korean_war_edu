@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 record SnapshotCsvRow (
     @JsonProperty("snapshot_date") LocalDate snapshotDate,
-    @JsonProperty ("title") String title,
+    @JsonProperty("title") String title,
     @JsonProperty("source_map") String sourceMap,
     @JsonProperty("note") String note
 ){

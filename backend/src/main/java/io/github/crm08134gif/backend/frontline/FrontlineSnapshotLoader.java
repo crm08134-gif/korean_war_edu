@@ -74,7 +74,7 @@ public class FrontlineSnapshotLoader implements ApplicationRunner{
                     throw new IllegalStateException("snapshots.csv에 날짜·이름·근거 지도 중 빈 칸이 있다: " + row);
                 }
                 if (!seen.add(row.snapshotDate())){
-                    throw new IllegalStateException("snapshots.csv에 같은 날짜가 두 번 있다." + row.snapshotDate());
+                    throw new IllegalStateException("snapshots.csv에 같은 날짜가 두 번 있다: " + row.snapshotDate());
                 }
             }
             return rows;
@@ -95,7 +95,7 @@ public class FrontlineSnapshotLoader implements ApplicationRunner{
                 .param("note", row.note())
                 .update();
         } catch (DataAccessException e){
-            throw new IllegalStateException(date + "스냅샷을 DB에 넣지 못했다", e);
+            throw new IllegalStateException(date + " 스냅샷을 DB에 넣지 못했다", e);
         }
     }
 

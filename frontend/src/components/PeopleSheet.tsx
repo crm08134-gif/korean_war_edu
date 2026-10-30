@@ -4,18 +4,47 @@ import { useEffect, useRef, useState } from "react";
 import { CloseIcon, PhotoCredit, SourceLine } from "@/components/EventCard";
 import type { EventPerson } from "@/lib/events";
 import { COUNTRY_LABEL, SIDE_COLOR, SIDE_LABEL, sortPeople } from "@/lib/people";
+import { applyVote, fetchVotes, putVote, type VoteCount, type VoteValue } from "@/lib/votes";
 
 // 사건 카드의 "관련 인물" 버튼으로 여는 시트. 카드 위를 덮고, 닫으면 읽던 카드로 돌아간다
 export default function PeopleSheet({
+  eventId,
   title,
   people,
   onClose,
 }: {
+  eventId: string;
   title: string;
   people: EventPerson[];
   onClose: () => void;
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // 인물별 좋아요·싫어요 수. 불러오기 전이나 실패했으면 비어 있고, 버튼은 숫자 없이 보인다
+  const [votes, setVotes] = useState<Map<string, VoteCount>>(new Map());
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchVotes(eventId, controller.signal)
+      .then((counts) => setVotes(new Map(counts.map((c) => [c.personId, c]))))
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) console.error(error);
+      });
+    return () => controller.abort();
+  }, [eventId]);
+
+  // 누르면 숫자를 먼저 바꿔 보여 주고, 서버가 준 수로 맞춘다. 실패하면 누르기 전으로 되돌린다
+  const vote = (personId: string, pressed: 1 | -1) => {
+    const before = votes;
+    const current = before.get(personId) ?? { personId, up: 0, down: 0, mine: 0 };
+    const value: VoteValue = current.mine === pressed ? 0 : pressed;
+    setVotes(new Map(before).set(personId, applyVote(current, value)));
+    putVote(eventId, personId, value)
+      .then((counts) => setVotes(new Map(counts.map((c) => [c.personId, c]))))
+      .catch((error: unknown) => {
+        console.error(error);
+        setVotes(before);
+      });
+  };
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -65,7 +94,7 @@ export default function PeopleSheet({
         <ul className="flex min-h-0 flex-col gap-3 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))]">
           {sortPeople(people).map((person) => (
             <li key={person.id}>
-              <PersonCard person={person} />
+              <PersonCard person={person} count={votes.get(person.id)} onVote={(v) => vote(person.id, v)} />
             </li>
           ))}
         </ul>
@@ -74,7 +103,15 @@ export default function PeopleSheet({
   );
 }
 
-function PersonCard({ person }: { person: EventPerson }) {
+function PersonCard({
+  person,
+  count,
+  onVote,
+}: {
+  person: EventPerson;
+  count: VoteCount | undefined;
+  onVote: (value: 1 | -1) => void;
+}) {
   return (
     <article className="flex flex-col gap-3 rounded-2xl bg-fill p-4">
       <div className="flex items-center gap-3.5">
@@ -94,6 +131,11 @@ function PersonCard({ person }: { person: EventPerson }) {
       </div>
 
       <p className="text-[15px] leading-[1.75]">{person.description}</p>
+
+      <div className="flex gap-2">
+        <VoteButton kind="up" name={person.name} count={count?.up} pressed={count?.mine === 1} onClick={() => onVote(1)} />
+        <VoteButton kind="down" name={person.name} count={count?.down} pressed={count?.mine === -1} onClick={() => onVote(-1)} />
+      </div>
 
       <footer className="flex flex-col gap-0.5 text-xs leading-relaxed text-muted">
         {person.photo ? <PhotoCredit meta={person.photo} /> : <span>저작권이 확인된 사진이 없습니다</span>}
@@ -148,5 +190,50 @@ function Flag({ country }: { country: string }) {
       onError={() => setMissing(true)}
       className="h-3.5 w-auto shrink-0 rounded-[2px] ring-1 ring-rule-soft"
     />
+  );
+}
+
+// 엄지 위·아래 버튼. 누른 버튼은 진하게 칠하고, 다시 누르면 취소된다
+function VoteButton({
+  kind,
+  name,
+  count,
+  pressed,
+  onClick,
+}: {
+  kind: "up" | "down";
+  name: string;
+  count: number | undefined;
+  pressed: boolean;
+  onClick: () => void;
+}) {
+  const label = kind === "up" ? "좋아요" : "싫어요";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      aria-label={`${name} ${label}${count === undefined ? "" : ` ${count}`}`}
+      className={`flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold tabular-nums ${
+        pressed ? "bg-ink text-white" : "bg-white text-ink ring-1 ring-rule-soft"
+      }`}
+    >
+      <ThumbIcon down={kind === "down"} />
+      {count ?? ""}
+    </button>
+  );
+}
+
+function ThumbIcon({ down }: { down: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style={down ? { transform: "scaleY(-1)" } : undefined}>
+      <path
+        d="M5 7.2 7.6 2.3c.8 0 1.5.7 1.4 1.6L8.6 6.3h3.7c.9 0 1.6.9 1.4 1.8l-1 4.6c-.2.7-.8 1.3-1.6 1.3H5V7.2ZM2 7.2h3V14H2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

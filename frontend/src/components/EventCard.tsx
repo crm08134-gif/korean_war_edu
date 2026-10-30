@@ -56,7 +56,7 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
           }
         />
       </div>
-      {peopleOpen && <PeopleSheet title={event.title} people={event.people} onClose={() => setPeopleOpenFor(null)} />}
+      {peopleOpen && <PeopleSheet eventId={event.id} title={event.title} people={event.people} onClose={() => setPeopleOpenFor(null)} />}
     </div>
   );
 }

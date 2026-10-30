@@ -20,5 +20,5 @@
     {"sourceId": "news-busan-2017-03-06", "locator": "기사 전체"},
     {"sourceId": "news-hurriyet-2017-12-07", "locator": "기사 전체"}
   ],
-  "status": "draft"
+  "status": "reviewed"
 }

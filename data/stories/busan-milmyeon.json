@@ -17,5 +17,5 @@
     {"sourceId": "news-seoul-2019-08-09", "locator": "기사 전체"},
     {"sourceId": "news-knn-2026-07-29", "locator": "기사 전체"}
   ],
-  "status": "draft"
+  "status": "reviewed"
 }

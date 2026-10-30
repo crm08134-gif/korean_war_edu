@@ -21,8 +21,16 @@ public record EventJson(
     Photo photo,
     List<Block> body,
     List<SourceRef> sources,
+    List<PersonRef> people,
     String status
 ) {
+    // 관련 인물이 없는 사건 파일은 people을 빼도 된다. 빈 목록으로 바꿔 두면 쓰는 곳에서 null을 따지지 않아도 된다
+    public EventJson {
+        if (people == null) {
+            people = List.of();
+        }
+    }
+
     // 본문 블록. "type" 값을 보고 어느 record로 읽을지 정한다. 모르는 type이면 읽기에서 실패한다
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     @JsonSubTypes({
@@ -55,5 +63,9 @@ public record EventJson(
 
     // 출처 목록 한 줄: sources.csv의 id와 장·쪽
     public record SourceRef(String sourceId, String locator) {
+    }
+
+    // 관련 인물 한 명: people.csv의 id, 그 사건 당시 직책, 그 사건에서 한 일(3~5문장), 출처, 검수 상태
+    public record PersonRef(String personId, String role, String description, List<SourceRef> sources, String status) {
     }
 }

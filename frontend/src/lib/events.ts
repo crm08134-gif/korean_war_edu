@@ -55,6 +55,19 @@ export type SourceRef = {
   locator: string; // 장·쪽
 };
 
+// 관련 인물 한 명 (사건마다 다른 직책과 설명). 진영은 사진 테두리 색을 고른다
+export type EventPerson = {
+  id: string;
+  name: string;
+  nameOriginal: string;
+  country: string; // 당시 국기: /flags/<country>.svg
+  side: "un" | "communist";
+  role: string; // 그 사건 당시 직책
+  description: string; // 그 사건에서 한 일 3~5문장
+  photo: PhotoMeta | null; // 허용 목록 안의 사진이 없으면 null (첫 글자 원을 그린다)
+  sources: SourceRef[];
+};
+
 export type WarEvent = {
   id: string;
   title: string;
@@ -73,6 +86,7 @@ export type WarEvent = {
   body: Block[];
   sources: SourceRef[];
   photos: PhotoMeta[]; // 대표 사진과 본문 사진의 메타데이터
+  people: EventPerson[]; // 관련 인물. 없으면 빈 배열
   status: "draft" | "reviewed"; // 화면에는 보이지 않는다. 백엔드가 reviewed만 내보내는 데 쓴다
 };
 

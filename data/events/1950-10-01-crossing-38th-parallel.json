@@ -29,5 +29,23 @@
     {"sourceId": "imhc-625-6", "locator": "5장 341~362쪽"},
     {"sourceId": "imhc-625-7", "locator": "1장 9~10쪽"}
   ],
+  "people": [
+    {
+      "personId": "syngman-rhee",
+      "role": "대한민국 대통령",
+      "description": "유엔이 38선 북쪽으로 진격할지를 결정하기 전에, 결정과 상관없이 북진하겠다고 밝히고 국군에 38선 돌파를 지시했다. 그 지시에 따라 10월 1일 국군 제3사단 제23연대 제3대대가 양양 남쪽 인구리 북쪽에서 처음으로 38선을 넘었다. 유엔총회의 결의는 그보다 엿새 뒤인 10월 7일에 가결되었다.",
+      "sources": [
+        {
+          "sourceId": "imhc-625-6",
+          "locator": "5장 341~362쪽"
+        },
+        {
+          "sourceId": "imhc-625-7",
+          "locator": "1장 9~10쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

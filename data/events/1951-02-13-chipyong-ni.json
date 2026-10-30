@@ -26,5 +26,23 @@
     {"sourceId": "cmh-mossman", "locator": "15장"},
     {"sourceId": "imhc-625-8", "locator": "4장 300~310쪽"}
   ],
+  "people": [
+    {
+      "personId": "paul-freeman",
+      "role": "미 제23연대장 (대령)",
+      "description": "2월 13일 횡성 쪽 방어선이 무너지고 지평리가 포위될 위험이 커지자, 연대를 여주로 물리자고 건의했다. 그러나 연대는 지평리에 남아, 배속된 프랑스대대와 함께 원형 진지를 만들고 중공군의 포위 공격을 사흘 동안 막았다. 14일 아침까지 연대 손실은 약 100명에 이르렀고, 그도 다리를 다쳤다. 15일 새벽 남쪽 G중대 진지를 빼앗겼지만 나머지 방향은 끝까지 버텼다.",
+      "sources": [
+        {
+          "sourceId": "cmh-mossman",
+          "locator": "15장"
+        },
+        {
+          "sourceId": "imhc-625-8",
+          "locator": "4장 300~310쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

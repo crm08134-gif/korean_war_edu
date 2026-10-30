@@ -37,6 +37,7 @@ public class EventLoader implements ApplicationRunner {
     // 사진 파일은 static/ 아래라 /photos/<파일 이름>으로 바로 내려받을 수 있다. photos.csv는 내보내지 않는다
     private static final String PHOTO_DIR = "classpath:static/photos/";
     private static final String PHOTO_CSV = "classpath:photos/photos.csv";
+    private static final String PEOPLE_CSV = "classpath:people/people.csv";
 
     private static final JsonMapper JSON = JsonMapper.builder()
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -67,6 +68,17 @@ public class EventLoader implements ApplicationRunner {
     ) {
     }
 
+    // data/people/people.csv 한 줄 = 인물 한 명. 사진은 photos.csv에 있는 파일 이름이고, 없으면 빈칸(null)
+    record PersonRow(
+        @JsonProperty("id") String id,
+        @JsonProperty("name") String name,
+        @JsonProperty("name_original") String nameOriginal,
+        @JsonProperty("country") String country,
+        @JsonProperty("side") String side,
+        @JsonProperty("photo") String photoFile
+    ) {
+    }
+
     private final ResourcePatternResolver resources;
     private final JdbcClient jdbc;
 
@@ -83,6 +95,8 @@ public class EventLoader implements ApplicationRunner {
         jdbc.sql("DELETE FROM story").update();
         // 사건의 출처 목록(event_source)과 사진 목록(event_photo)은 ON DELETE CASCADE로 함께 지워진다
         jdbc.sql("DELETE FROM event").update();
+        // 인물은 사진을 가리키므로 사진보다 먼저 지운다
+        jdbc.sql("DELETE FROM person").update();
         jdbc.sql("DELETE FROM source_doc").update();
         jdbc.sql("DELETE FROM photo").update();
 
@@ -101,6 +115,16 @@ public class EventLoader implements ApplicationRunner {
             }
         }
 
+        // 사건 파일의 people이 인물을 가리키므로 사건보다 먼저 넣는다
+        List<PersonRow> people = readCsv(PEOPLE_CSV, PersonRow.class);
+        for (PersonRow person : people) {
+            try {
+                jdbc.sql(INSERT_PERSON).paramSource(person).update();
+            } catch (RuntimeException e) {
+                throw new IllegalStateException("people.csv의 " + person.id() + " 인물을 넣지 못했다: " + e.getMessage());
+            }
+        }
+
         Resource[] files = resources.getResources(DIR + "*.json");
         for (Resource file : files) {
             try (InputStream in = file.getInputStream()) {
@@ -111,7 +135,7 @@ public class EventLoader implements ApplicationRunner {
                 throw new IllegalStateException(file.getFilename() + " 사건을 넣지 못했다: " + e.getMessage(), e);
             }
         }
-        log.info("사건 {}개, 출처 {}개, 사진 {}개를 DB에 맞췄다", files.length, sources.size(), photos.size());
+        log.info("사건 {}개, 출처 {}개, 사진 {}개, 인물 {}명을 DB에 맞췄다", files.length, sources.size(), photos.size(), people.size());
     }
 
     private <T> List<T> readCsv(String path, Class<T> type) throws IOException {
@@ -164,6 +188,7 @@ public class EventLoader implements ApplicationRunner {
             throw new IllegalStateException("파일 이름이 <date>-<id>.json 과 다르다");
         }
         checkContent(e.sources(), e.body());
+        checkPeople(e.people());
     }
 
     // 사건과 이야기(StoryLoader)가 함께 쓰는 검사: 출처와 본문이 있어야 하고, 본문 블록이 비면 안 된다
@@ -180,6 +205,15 @@ public class EventLoader implements ApplicationRunner {
                 case EventJson.Paragraph p -> checkText(p.text());
                 case EventJson.Table t -> checkTable(t);
                 case EventJson.PhotoBlock p -> checkText(p.caption());
+            }
+        }
+    }
+
+    // 인물 설명마다 출처가 있어야 한다. JSON 배열이라 DB가 비었는지 볼 수 없다
+    private static void checkPeople(List<EventJson.PersonRef> people){
+        for (EventJson.PersonRef person : people) {
+            if (person.sources() == null || person.sources().isEmpty()) {
+                throw new IllegalStateException(("관련 인물 " + person.personId() + "의 출처가 없다"));
             }
         }
     }
@@ -235,6 +269,27 @@ public class EventLoader implements ApplicationRunner {
                 .param("file", file)
                 .update();
         }
+
+        List<EventJson.PersonRef> people = e.people();
+        for (int i = 0; i < people.size(); i++) {
+            EventJson.PersonRef person = people.get(i);
+            jdbc.sql(INSERT_EVENT_PERSON)
+                .param("eventId", e.id())
+                .param("personId", person.personId())
+                .param("position", i)
+                .param("role", person.role())
+                .param("description", person.description())
+                .param("status", person.status())
+                .update();
+            for (EventJson.SourceRef source : person.sources()) {
+                jdbc.sql(INSERT_EVENT_PERSON_SOURCE)
+                    .param("eventId", e.id())
+                    .param("personId", person.personId())
+                    .param("sourceId", source.sourceId())
+                    .param("locator", source.locator())
+                    .update();
+            }
+        }
     }
 
     // 이 글이 쓰는 사진: 대표 사진과 본문의 사진 블록 (StoryLoader도 쓴다)
@@ -273,5 +328,19 @@ public class EventLoader implements ApplicationRunner {
     private static final String INSERT_EVENT_SOURCE = """
             INSERT INTO event_source (event_id, source_id, locator)
             VALUES (:eventId, :sourceId, :locator)
+            """;
+    private static final String INSERT_PERSON = """
+            INSERT INTO person (id, name, name_original, country, side, photo_file)
+            VALUES (:id, :name, :nameOriginal, :country, :side, :photoFile)
+            """;
+
+    private static final String INSERT_EVENT_PERSON = """
+            INSERT INTO event_person (event_id, person_id, position, role, description, status)
+            VALUES (:eventId, :personId, :position, :role, :description, :status)
+            """;
+
+    private static final String INSERT_EVENT_PERSON_SOURCE = """
+            INSERT INTO event_person_source (event_id, person_id, source_id, locator)
+            VALUES (:eventId, :personId, :sourceId, :locator)
             """;
 }

@@ -30,5 +30,43 @@
     {"sourceId": "cwihp-bulletin-4", "locator": "Hershberg 해설 60쪽"},
     {"sourceId": "imhc-625-1", "locator": "2장 108~110·123~125쪽, 594쪽"}
   ],
+  "people": [
+    {
+      "personId": "acheson",
+      "role": "미국 국무장관",
+      "description": "1950년 1월 12일 워싱턴의 내셔널 프레스 클럽에서 '아시아의 위기: 미국 정책의 검토'라는 제목으로 연설했다. 태평양의 방위선이 알류샨 열도에서 일본과 류큐를 지나 필리핀으로 이어진다고 설명했고, 그 밖의 지역은 공격을 받으면 먼저 그 나라 국민이 맞서고 다음으로 유엔 헌장에 따른 국제 사회의 약속에 기대야 한다고 말했다. 한국에 대해서는 따로, 미국이 유엔과 함께 독립국으로 세웠고 의회에 원조를 계속해 달라고 요청하고 있다고 말했다. 1월 19일 미 하원이 한국 원조 법안을 부결하자, 그는 트루먼 대통령과 함께 깊은 유감을 밝혔다.",
+      "sources": [
+        {
+          "sourceId": "dsb-1950-01-23",
+          "locator": "Crisis in Asia—An Examination of U.S. Policy, 111~118쪽"
+        },
+        {
+          "sourceId": "dsb-1950-02-06",
+          "locator": "한국 원조 법안 부결에 대한 대통령 성명과 국무장관 서한, 212쪽"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "personId": "macarthur",
+      "role": "미 극동군 사령관",
+      "description": "도쿄에서 극동의 미군을 지휘하고 있었다. 군사편찬연구소에 따르면 맥아더와 미 합동참모본부는 아시아 대륙에 지상군을 두기보다 일본·오키나와·필리핀 같은 섬들을 해군과 공군으로 지키는 '도서 방위선'을 구상하고 있었다. 애치슨이 연설에서 그린 방위선도 이 섬들을 잇는 선이었다. 윌슨센터 회보의 해설은 이 방위선이 미군 지휘부가 이미 밝힌 내용을 되풀이한 것이라고 보았다.",
+      "sources": [
+        {
+          "sourceId": "imhc-625-1",
+          "locator": "2장 108~110쪽"
+        },
+        {
+          "sourceId": "cwihp-bulletin-4",
+          "locator": "Hershberg 해설 60쪽"
+        },
+        {
+          "sourceId": "dsb-1950-01-23",
+          "locator": "Crisis in Asia—An Examination of U.S. Policy, 111~118쪽"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
   "status": "reviewed"
 }

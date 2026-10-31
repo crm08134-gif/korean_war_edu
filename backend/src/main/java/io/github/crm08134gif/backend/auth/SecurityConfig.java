@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.csrf.CsrfFilter;
 
 @Configuration
 class SecurityConfig {
@@ -31,7 +33,20 @@ class SecurityConfig {
                 // 서버 세션을 만들지 않는다. 누구인지는 요청마다 쿠키의 JWT로 판단한다
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // CSRF: XSRF-TOKEN 쿠키 값을 프론트가 X-XSRF-TOKEN 머리글로 다시 보내야 쓰기 요청이 통과한다
-                .csrf(csrf -> csrf.spa())
+                .csrf(csrf -> {
+                    csrf.spa();
+                    // 아래 oauth2ResourceServer 설정은 "토큰이 실린 요청"을 CSRF 검사에서 저절로 뺀다.
+                    // 토큰을 Authorization 머리글로 보낼 때는 맞지만(브라우저가 알아서 붙이지 않는다),
+                    // 우리는 쿠키로 보내서 브라우저가 다른 사이트의 요청에도 실어 보낸다. 그래서 모든 쓰기 요청을 다시 검사하게 되돌린다
+                    // (AuthSecurityTests의 CSRF 테스트가 이 구멍을 잡았다)
+                    csrf.addObjectPostProcessor(new ObjectPostProcessor<CsrfFilter>() {
+                        @Override
+                        public <O extends CsrfFilter> O postProcess(O filter) {
+                            filter.setRequireCsrfProtectionMatcher(CsrfFilter.DEFAULT_CSRF_MATCHER);
+                            return filter;
+                        }
+                    });
+                })
                 // 로그아웃은 우리 /api/auth/logout이 한다
                 .logout(logout -> logout.disable())
                 // 로그인이 필요한데 안 했으면 로그인 화면으로 보내지 않고 401만 준다 (프론트가 처리)

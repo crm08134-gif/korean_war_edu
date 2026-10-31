@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import AccountSheet from "@/components/AccountSheet";
 import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
 import KindIcon from "@/components/KindIcon";
 import StoriesPanel from "@/components/StoriesPanel";
 import Timeline from "@/components/Timeline";
+import { ANONYMOUS, fetchMe, type Me } from "@/lib/auth";
 import { KIND_LABEL } from "@/lib/event-kinds";
 import { eventsBetween, fetchEvents, formatEventDate, formatStartDate, prewarEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
@@ -23,6 +25,35 @@ export default function WarMapApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 전쟁 속 이야기 화면. 스냅샷과 상관없어서 열고 닫아도 보던 스냅샷과 사건 카드는 그대로다
   const [storiesOpen, setStoriesOpen] = useState(false);
+  // 로그인 상태. 로그인·닉네임·로그아웃 시트
+  const [me, setMe] = useState<Me>(ANONYMOUS);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [loginFailed, setLoginFailed] = useState(false);
+
+  const loadMe = useCallback((signal?: AbortSignal) => {
+    return fetchMe(signal)
+      .then((result) => {
+        setMe(result);
+        return result;
+      })
+      .catch((error: unknown) => {
+        if (!signal?.aborted) console.error(error);
+        return null;
+      });
+  }, []);
+
+  // 처음 열 때 로그인 상태를 읽는다. 로그인에서 막 돌아왔는데 닉네임이 없거나, 로그인이 실패했으면 시트를 연다
+  useEffect(() => {
+    const controller = new AbortController();
+    const failed = new URLSearchParams(window.location.search).get("login") === "failed";
+    if (failed) window.history.replaceState(null, "", window.location.pathname);
+    loadMe(controller.signal).then((result) => {
+      if (controller.signal.aborted) return;
+      if (failed) setLoginFailed(true);
+      if (failed || result?.needsNickname) setAccountOpen(true);
+    });
+    return () => controller.abort();
+  }, [loadMe]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -93,7 +124,7 @@ export default function WarMapApp() {
   // 키보드 ←/→로도 넘긴다 (PC에서 볼 때). Esc는 사건 카드를 닫는다.
   // 이야기 화면이 열려 있으면 키는 그 화면이 받는다
   useEffect(() => {
-    if (storiesOpen) return;
+    if (storiesOpen || accountOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Escape") {
         setSelectedId(null);
@@ -103,11 +134,11 @@ export default function WarMapApp() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last, storiesOpen]);
+  }, [last, storiesOpen, accountOpen]);
 
   return (
     <main className="relative mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
-      {/* 지도 위에 뜬 흰 머리말 카드: 날짜·몇 번째 칸, 스냅샷 이름, 이야기 버튼 */}
+      {/* 지도 위에 뜬 흰 머리말 카드: 날짜·몇 번째 칸, 스냅샷 이름, 로그인·이야기 버튼 */}
       <header className="px-3 pt-3 pb-1">
         <div className="flex items-center justify-between gap-3 rounded-[18px] bg-white py-2.5 pr-2.5 pl-4 shadow-[0_2px_12px_rgba(26,29,33,0.08)]">
           <div className="flex min-w-0 flex-col">
@@ -118,15 +149,25 @@ export default function WarMapApp() {
             {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
             <h1 className="truncate text-xl font-extrabold tracking-tight">{current ? current.title : " "}</h1>
           </div>
-          {/* 시기와 상관없는 글이라 스냅샷과 상관없이 늘 같은 자리에 둔다 */}
-          <button
-            type="button"
-            onClick={() => setStoriesOpen(true)}
-            className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-bold text-white"
-          >
-            <BookIcon />
-            이야기
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAccountOpen(true)}
+              aria-label={me.loggedIn ? `내 정보 (${me.nickname ?? "닉네임 없음"})` : "로그인"}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-fill"
+            >
+              <PersonIcon filled={me.loggedIn} />
+            </button>
+            {/* 시기와 상관없는 글이라 스냅샷과 상관없이 늘 같은 자리에 둔다 */}
+            <button
+              type="button"
+              onClick={() => setStoriesOpen(true)}
+              className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-bold text-white"
+            >
+              <BookIcon />
+              이야기
+            </button>
+          </div>
         </div>
       </header>
 
@@ -192,6 +233,22 @@ export default function WarMapApp() {
       {selected && <EventCard event={selected} onClose={() => setSelectedId(null)} />}
 
       {storiesOpen && <StoriesPanel onClose={() => setStoriesOpen(false)} />}
+
+      {accountOpen && (
+        <AccountSheet
+          me={me}
+          loginFailed={loginFailed}
+          onChanged={() => {
+            loadMe().then((result) => {
+              if (result && !result.needsNickname) setAccountOpen(false);
+            });
+          }}
+          onClose={() => {
+            setAccountOpen(false);
+            setLoginFailed(false);
+          }}
+        />
+      )}
     </main>
   );
 }
@@ -205,6 +262,23 @@ function BookIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// 사람 모양. 로그인하면 속을 채운다 (직접 그린 단순한 도형)
+function PersonIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <circle cx="9" cy="6" r="3.2" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M2.8 16c.6-3.2 3.1-5.2 6.2-5.2s5.6 2 6.2 5.2"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>

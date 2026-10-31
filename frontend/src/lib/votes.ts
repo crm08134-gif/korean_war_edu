@@ -1,6 +1,8 @@
 // 관련 인물 호감도(좋아요·싫어요). 백엔드 VoteController와 같은 모양
 // 회원 기능이 생기기 전이라, 브라우저마다 익명 ID를 하나 만들어 X-Voter-Id 머리글로 보낸다
 
+import { apiFetch } from "@/lib/api";
+
 export type VoteValue = 1 | -1 | 0; // 1 좋아요, -1 싫어요, 0 취소
 
 export type VoteCount = {
@@ -47,7 +49,8 @@ export async function fetchVotes(eventId: string, signal?: AbortSignal): Promise
 
 // 표를 넣거나 바꾸거나(1, -1) 취소한다(0). 그 사건의 인물별 새 수를 돌려받는다
 export async function putVote(eventId: string, personId: string, value: VoteValue): Promise<VoteCount[]> {
-  const res = await fetch("/api/votes", {
+  // 쓰기 요청이라 CSRF 머리글이 필요하다 (apiFetch가 붙인다)
+  const res = await apiFetch("/api/votes", {
     method: "PUT",
     headers: { "Content-Type": "application/json", "X-Voter-Id": voterId() },
     body: JSON.stringify({ eventId, personId, value }),

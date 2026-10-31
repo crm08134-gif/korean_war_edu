@@ -31,7 +31,16 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: 빌드와 테스트
-        run: ./gradlew build
+        run: ./gradlew build --console=plain 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+        shell: bash
+
+      - name: (임시) 실패 원인을 주석으로 보이기
+        if: failure()
+        shell: bash
+        run: |
+          grep -nE "error:|FAILED|Caused by|Exception|expected|but was|\.java:[0-9]+" build.log | grep -v "^.*at org\.junit\|at java\.base" | head -60 > errs.txt || true
+          for f in build/test-results/test/*.xml; do grep -l "<failure" "$f" >/dev/null 2>&1 && grep -A3 "<failure" "$f" | head -8 >> errs.txt; done || true
+          i=0; while IFS= read -r line; do i=$((i+1)); [ $i -gt 45 ] && break; echo "::error::${line:0:900}"; done < errs.txt
 
   frontend:
     name: frontend build

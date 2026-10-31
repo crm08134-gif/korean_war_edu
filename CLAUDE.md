@@ -63,7 +63,7 @@
 ## 2. 저장소와 실행
 
 - 저장소: `crm08134-gif/korean_war_edu` (공개). 사용자 로컬 `C:\korean-war-map-sprint0`, Windows + IntelliJ + Git Bash.
-- 백엔드 `backend/`: Spring Boot 4.1.1, Java 25, Gradle(Groovy), Flyway, JdbcClient + SQL. Jackson 3(그룹 `tools.jackson`, 어노테이션은 `com.fasterxml.jackson.annotation`).
+- 백엔드 `backend/`: Spring Boot 4.1.1, Java 25, Gradle(Groovy), Flyway, JdbcClient + SQL(지도·사건·투표). 회원·게시판은 Spring Data JPA, 인증은 Spring Security 7(OAuth2 로그인 + JWT). Jackson 3(그룹 `tools.jackson`, 어노테이션은 `com.fasterxml.jackson.annotation`).
 - DB: PostgreSQL 18 + PostGIS 3.6. 로컬은 `compose.yaml`(`postgis/postgis:18-3.6`), 테스트는 Testcontainers.
 - 프론트 `frontend/`: Next.js 16.4.2(Turbopack), React 19.3.0, maplibre-gl 6.15.0, Tailwind 4, TypeScript 5. sharp는 devDependencies에 넣지 않는다.
 - CI: job `backend build`(`./gradlew build`), `frontend build`(lint + build).
@@ -91,7 +91,7 @@
   - 커밋 메시지는 Conventional Commits(`feat:`, `fix:`, `docs:`, `chore:`). PR 제목도 같은 형식으로 쓴다(Squash merge가 PR 제목을 main 커밋 제목으로 쓴다).
   - main을 브랜치에 merge하지 않는다. 필요하면 rebase하거나 `git switch -C <브랜치> origin/main`으로 다시 만든다.
 - PR 본문은 `.github/pull_request_template.md` 칸에 맞춰 쓴다.
-- **이미 적용된 Flyway 마이그레이션(V1~V9)은 절대 고치지 않는다.** 다음 번호(V10 …)로 낸다.
+- **이미 적용된 Flyway 마이그레이션(V1~V11)은 절대 고치지 않는다.** 다음 번호(V12 …)로 낸다.
 - 시크릿과 `.env`는 커밋하지 않는다.
 - 검사는 한 곳에만 둔다. DB 제약이 막는 것은 적재기에서 다시 검사하지 않는다. 적재기는 DB가 못 하는 검사만 한다.
 - 화면을 바꾸면 사용자가 직접 확인할 수 있게 확인 방법(어느 스냅샷에서 무엇을 누르면 무엇이 보이는지)을 적는다.
@@ -166,4 +166,36 @@
 - **국기:** 1950년대 당시 국기(미국 별 48개, 소련 1936~1955년판, 1949년 태극기 등). `frontend/public/flags/<country>.svg`, 출처는 그 폴더의 README.
 - **진영 표시:** 사진 테두리를 흐리게 번지는 진영색(지도와 같은 북 빨강·남 파랑)으로 칠하고, 색만으로 알리지 않도록 "유엔군 측/공산군 측" 글자도 단다. 시트 안 순서는 유엔·한국 측 먼저.
 - **좋아요·싫어요:** 인물 호감도(엄지 위·아래), 숫자 공개, 사건마다 따로 센다. 회원 기능 전에는 브라우저마다 만든 익명 ID(`X-Voter-Id` 머리글)로 한 기기 한 표, 다시 누르면 취소. DB는 V10 `person_vote`. 사건·인물 테이블은 적재기가 다시 채우므로 외래 키를 걸지 않는다. 회원 기능이 생기면 `voter_id`를 회원 ID로 바꾸는 마이그레이션을 낸다.
+
+## 7. 회원과 보안
+
+게시판(3단계)을 위한 회원·로그인. **보안을 최우선으로 한다.** 애매하면 막고 사용자에게 묻는다.
+
+### 확정된 결정
+
+- **로그인:** 카카오·구글 소셜 로그인만. 비밀번호·이메일·프로필은 받지 않고 제공자 회원 번호(카카오 `id`, 구글 `sub`)만 저장한다. 닉네임은 우리 화면에서 받는다(한글·영문·숫자 2~12자, 대소문자 무시 중복 금지, 30일에 한 번 변경, 운영진처럼 보이는 이름 금지).
+- **인증은 JWT, 서버 세션 없음(`STATELESS`).**
+  - 액세스 토큰: JWT(HS256, 15분, `iss`=korean-war, `aud`=api, `sub`=회원 번호, `role`). HttpOnly 쿠키 `access_token`.
+  - 리프레시 토큰: 32바이트 난수(JWT 아님), 14일. DB `refresh_token`에 SHA-256 해시만 저장. HttpOnly 쿠키 `refresh_token`, 경로 `/api/auth`.
+  - 갱신할 때마다 새로 발급하고 쓴 토큰은 폐기(rotation). 폐기된 토큰이 다시 오면 그 기기 묶음(`family_id`)을 모두 끊는다. 동시 갱신은 행 잠금(서버)과 `navigator.locks`(프론트)로 한 줄로 세운다.
+  - 제재·탈퇴는 회원의 리프레시 토큰을 폐기하고, 남은 액세스 토큰(최대 15분)은 쓰기 요청 때 DB의 회원 상태로 막는다.
+- **로그인 도중 상태(state, nonce):** 세션 대신 5분짜리 서명된 JWT 쿠키(`aud`=oauth2-login, 경로 `/login/oauth2`). 자바 직렬화로 쿠키에 넣지 않는다.
+- **카카오·구글 토큰은 저장하지 않는다.** 회원 번호를 받은 뒤 버린다.
+- **CSRF:** 쿠키 인증이라 필요하다. `csrf.spa()` — 프론트는 `XSRF-TOKEN` 쿠키 값을 `X-XSRF-TOKEN` 머리글로 보낸다(`frontend/src/lib/api.ts`의 `apiFetch`). 쓰기 요청은 모두 `apiFetch`를 쓴다.
+- **키:** `.env`에만(`KAKAO_*`, `GOOGLE_*`, `APP_BASE_URL`, `JWT_SECRET`). 백엔드는 `spring.config.import`로 `../.env`를 읽는다. 테스트는 `src/test/resources/config/application.yaml`의 가짜 값을 쓴다.
+- 코드: `backend/.../member/`(회원, 닉네임, `/api/me`), `backend/.../auth/`(`SecurityConfig`, 토큰, 쿠키, OAuth 처리). DB는 V11.
+
+### 원칙 (코드를 바꿀 때마다 지킨다)
+
+- **기본은 막는다.** `SecurityConfig`는 `anyRequest().denyAll()`. 새 주소는 공개 여부를 정해 명시적으로 연다. 공개 읽기 API를 늘리면 `CookieBearerTokenResolver`의 건너뛰기 목록도 함께 본다.
+- **누구인지는 서명된 토큰(`jwt.getSubject()`)으로만** 판단한다. 요청 본문·주소의 회원 번호를 믿지 않는다. 본인 글 확인·권한·제재는 서버가 다시 확인한다.
+- 사용자 입력은 길이·형식을 서버에서 검사하고, 글 내용은 HTML로 해석하지 않고 글자로만 보인다(`dangerouslySetInnerHTML` 금지). SQL은 늘 매개변수로.
+- 토큰·쿠키 값·키를 로그에 남기지 않는다. 오류 응답에는 우리가 쓴 문장만(ProblemDetail `detail`).
+- 돌아갈 주소는 고정(`APP_BASE_URL`)한다. 요청에 담긴 주소로 보내지 않는다.
+- 서명 검증·OAuth 교환 같은 보안 핵심은 Spring Security 표준 구현에 맡기고 직접 짜지 않는다.
+- 보안 동작은 테스트로 남긴다(`AuthSecurityTests`: 위조 토큰, CSRF, 리프레시 재사용, 공개 자료).
+
+### 배포 전에 할 것
+
+HTTPS, `APP_BASE_URL`·콘솔의 돌아올 주소를 운영 주소로, 운영용 `JWT_SECRET` 새로 발급, Swagger 닫기, DB 외부 접근 차단, 만료 토큰 정리 작업, 로그인·갱신 요청 횟수 제한, 개인정보 처리방침·이용약관 화면.
 

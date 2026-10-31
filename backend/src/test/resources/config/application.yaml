@@ -1,0 +1,9 @@
+# 테스트에서만 쓰는 가짜 값. 진짜 키는 .env에만 둔다
+# (테스트 클래스패스의 config/application.yaml은 main 설정 위에 덮어써진다)
+KAKAO_CLIENT_ID: test-kakao
+KAKAO_CLIENT_SECRET: test-kakao-secret
+GOOGLE_CLIENT_ID: test-google
+GOOGLE_CLIENT_SECRET: test-google-secret
+APP_BASE_URL: http://localhost:3000
+# 테스트 전용 32바이트 키(Base64). 운영 키와 다르다
+JWT_SECRET: dGVzdC1vbmx5LWp3dC1zZWNyZXQtMzItYnl0ZXMhISE=

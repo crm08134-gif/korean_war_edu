@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
       { source: "/api/:path*", destination: `${backendUrl}/api/:path*` },
       // 사건 카드 사진 (data/photos/). 백엔드가 jar 안의 static/photos/에서 내준다
       { source: "/photos/:path*", destination: `${backendUrl}/photos/:path*` },
+      // 카카오·구글 로그인. 시작 주소와 돌아오는 주소를 백엔드(Spring Security)가 처리한다
+      { source: "/oauth2/:path*", destination: `${backendUrl}/oauth2/:path*` },
+      { source: "/login/oauth2/:path*", destination: `${backendUrl}/login/oauth2/:path*` },
     ];
   },
   turbopack: {

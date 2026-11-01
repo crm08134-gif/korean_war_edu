@@ -2,7 +2,7 @@
 -- 신고(report)는 4단계에서 V13으로 따로 만든다
 --
 -- 공통 규칙
--- * 글·댓글은 실제로 지우지 않는다(DELETE 안 함). status를 'deleted'로 바꾼다.
+-- * 글·댓글은 실제로 지우지 않는다(DELETE 안 함). status를 'DELETED'로 바꾼다.
 --   신고 검토·분쟁 때 원래 내용을 확인해야 하고, 댓글이 달린 글이 사라지면 댓글이 고아가 되기 때문이다.
 --   그래서 외래 키는 ON DELETE 옵션 없이 둔다(기본값 NO ACTION). 누가 실수로 DELETE를 해도 DB가 막는다.
 -- * 길이 제한은 서버(@Size)가 먼저 검사하지만 DB에도 CHECK로 한 번 더 건다.
@@ -22,20 +22,21 @@ CREATE TABLE post (
                     author_id   BIGINT      NOT NULL REFERENCES member (id),
                     title       TEXT        NOT NULL,
                     body        TEXT        NOT NULL,
-  -- visible: 보임 / blinded: 신고 2명으로 가려짐(4단계) / deleted: 작성자가 지움
-                    status      TEXT        NOT NULL DEFAULT 'visible',
+  -- VISIBLE: 보임 / BLINDED: 신고 2명으로 가려짐(4단계) / DELETED: 작성자가 지움
+  -- 대문자인 이유: Java enum 이름을 그대로 저장한다(@Enumerated(STRING), member.role과 같은 방식)
+                    status      TEXT        NOT NULL DEFAULT 'VISIBLE',
                     created_at  TIMESTAMPTZ NOT NULL,
   -- 수정한 적이 없으면 NULL. 화면에 "수정됨" 표시에 쓴다
                     updated_at  TIMESTAMPTZ,
                     deleted_at  TIMESTAMPTZ,
 
-                    CONSTRAINT post_board_check  CHECK (board IN ('event', 'person')),
-                    CONSTRAINT post_status_check CHECK (status IN ('visible', 'blinded', 'deleted')),
+                    CONSTRAINT post_board_check  CHECK (board IN ('EVENT', 'PERSON')),
+                    CONSTRAINT post_status_check CHECK (status IN ('VISIBLE', 'BLINDED', 'DELETED')),
   -- 앞뒤 공백만 있는 제목도 막는다(btrim = 양쪽 공백 제거)
                     CONSTRAINT post_title_check  CHECK (char_length(btrim(title)) BETWEEN 1 AND 100),
                     CONSTRAINT post_body_check   CHECK (char_length(btrim(body)) BETWEEN 1 AND 5000),
   -- 지운 글에는 지운 시각이 반드시 있고, 안 지운 글에는 없다. 둘이 어긋나는 버그를 DB가 잡는다
-                    CONSTRAINT post_deleted_check CHECK ((status = 'deleted') = (deleted_at IS NOT NULL))
+                    CONSTRAINT post_deleted_check CHECK ((status = 'DELETED') = (deleted_at IS NOT NULL))
 );
 
 -- 목록 조회: WHERE board = ? AND target_id = ? AND id < :cursor ORDER BY id DESC LIMIT 20
@@ -53,14 +54,14 @@ CREATE TABLE comment (
                        author_id   BIGINT      NOT NULL REFERENCES member (id),
   -- 대댓글은 없다(parent_id 없음). 한 단계만
                        body        TEXT        NOT NULL,
-                       status      TEXT        NOT NULL DEFAULT 'visible',
+                       status      TEXT        NOT NULL DEFAULT 'VISIBLE',
                        created_at  TIMESTAMPTZ NOT NULL,
                        updated_at  TIMESTAMPTZ,
                        deleted_at  TIMESTAMPTZ,
 
-                       CONSTRAINT comment_status_check  CHECK (status IN ('visible', 'blinded', 'deleted')),
+                       CONSTRAINT comment_status_check  CHECK (status IN ('VISIBLE', 'BLINDED', 'DELETED')),
                        CONSTRAINT comment_body_check    CHECK (char_length(btrim(body)) BETWEEN 1 AND 1000),
-                       CONSTRAINT comment_deleted_check CHECK ((status = 'deleted') = (deleted_at IS NOT NULL))
+                       CONSTRAINT comment_deleted_check CHECK ((status = 'DELETED') = (deleted_at IS NOT NULL))
 );
 
 -- 글 본문 아래 댓글: WHERE post_id = ? ORDER BY id (오래된 것부터)

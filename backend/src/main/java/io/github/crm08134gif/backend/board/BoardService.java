@@ -4,6 +4,9 @@ import io.github.crm08134gif.backend.member.Member;
 import io.github.crm08134gif.backend.member.MemberRepository;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +17,8 @@ public class BoardService {
 
     private static final Duration MINUTE = Duration.ofMinutes(1);
     private static final Duration DAY = Duration.ofDays(1);
+    private static final int PAGE_SIZE = 20;
+    private static final String WITHDRAWN = "탈퇴한 사용자";
 
     private final PostRepository posts;
     private final CommentRepository comments;
@@ -28,6 +33,59 @@ public class BoardService {
         this.likes = likes;
         this.targets = targets;
         this.members = members;
+    }
+
+    // ---------- 읽기 (로그인 없이도. viewerId는 비로그인이면 null) ----------
+
+    // targetId가 null이면 드롭다운 "전체"
+    @Transactional(readOnly = true)
+    public PostPage list(BoardType board, String targetId, Long cursor, Long viewerId) {
+        long before = cursor == null ? Long.MAX_VALUE : cursor;
+        // 하나 더 읽어서 다음 페이지가 있는지 본다 (COUNT 쿼리 없이)
+        Limit limit = Limit.of(PAGE_SIZE + 1);
+        List<Post> rows = targetId == null
+            ? posts.findBoardPage(board, before, limit)
+            : posts.findPage(board, targetId, before, limit);
+
+        boolean hasNext = rows.size() > PAGE_SIZE;
+        List<Post> page = hasNext ? rows.subList(0, PAGE_SIZE) : rows;
+
+        // 공감 수는 글 개수와 상관없이 쿼리 한 번
+        Map<Long, LikeCount> counts = likes.postCounts(page.stream().map(Post::getId).toList(), viewerId);
+        List<PostSummary> items = page.stream()
+            .map(p -> summary(p, counts.get(p.getId()), viewerId))
+            .toList();
+        Long nextCursor = hasNext ? page.getLast().getId() : null;
+        return new PostPage(items, nextCursor);
+    }
+
+    @Transactional(readOnly = true)
+    public PostDetail detail(long postId, Long viewerId) {
+        Post post = posts.findWithAuthor(postId)
+            .filter(p -> !p.isDeleted())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다"));
+        List<Comment> rows = comments.findByPost(postId);
+
+        LikeCount postLikes = likes.postCounts(List.of(postId), viewerId).get(postId);
+        Map<Long, LikeCount> commentLikes =
+            likes.commentCounts(rows.stream().map(Comment::getId).toList(), viewerId);
+
+        boolean mine = post.isWrittenBy(viewerId);
+        boolean blinded = post.getStatus() == PostStatus.BLINDED;
+        // 가려진 글은 화면에서 숨기는 게 아니라 서버가 내용을 아예 보내지 않는다. 작성자 본인에게만 보낸다
+        boolean hidden = blinded && !mine;
+        List<CommentView> views = rows.stream()
+            .map(c -> view(c, commentLikes.get(c.getId()), viewerId))
+            .toList();
+
+        // 인수 순서는 PostDetail의 칸 순서와 같아야 한다 (같은 String끼리는 바뀌어도 컴파일 오류가 안 난다)
+        return new PostDetail(
+            post.getId(), post.getBoard(), post.getTargetId(),
+            hidden ? null : post.getTitle(),
+            hidden ? null : post.getBody(),
+            authorName(post.getAuthor()),
+            blinded, likeCount(postLikes), liked(postLikes), mine,
+            post.getCreatedAt(), post.getUpdatedAt(), views);
     }
 
     // ---------- 글 ----------
@@ -118,6 +176,43 @@ public class BoardService {
         } else {
             likes.unlikeComment(commentId, memberId);
         }
+    }
+
+    // ---------- 응답 만들기 (트랜잭션 안에서. open-in-view가 꺼져 있어 밖에서는 LAZY를 못 읽는다) ----------
+
+    private PostSummary summary(Post post, LikeCount count, Long viewerId) {
+        boolean mine = post.isWrittenBy(viewerId);
+        boolean blinded = post.getStatus() == PostStatus.BLINDED;
+        return new PostSummary(
+            post.getId(), post.getTargetId(),
+            blinded && !mine ? null : post.getTitle(),
+            authorName(post.getAuthor()),
+            blinded, likeCount(count), liked(count), mine, post.getCreatedAt());
+    }
+
+    private CommentView view(Comment comment, LikeCount count, Long viewerId) {
+        boolean mine = comment.isWrittenBy(viewerId);
+        boolean blinded = comment.getStatus() == PostStatus.BLINDED;
+        return new CommentView(
+            comment.getId(),
+            blinded && !mine ? null : comment.getBody(),
+            authorName(comment.getAuthor()),
+            blinded, likeCount(count), liked(count), mine,
+            comment.getCreatedAt(), comment.getUpdatedAt());
+    }
+
+    // 탈퇴하면 닉네임이 지워진다. "탈퇴"는 닉네임 예약어라 진짜 회원과 헷갈리지 않는다
+    private static String authorName(Member author) {
+        return author.isWithdrawn() ? WITHDRAWN : author.getNickname();
+    }
+
+    // 공감이 하나도 없으면 LikeRepository 결과에 없다 (null)
+    private static long likeCount(LikeCount count) {
+        return count == null ? 0 : count.likes();
+    }
+
+    private static boolean liked(LikeCount count) {
+        return count != null && count.mine();
     }
 
     // ---------- 확인 ----------

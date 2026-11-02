@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AccountSheet from "@/components/AccountSheet";
+import BoardPanel from "@/components/BoardPanel";
 import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
 import KindIcon from "@/components/KindIcon";
@@ -25,6 +26,8 @@ export default function WarMapApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 전쟁 속 이야기 화면. 스냅샷과 상관없어서 열고 닫아도 보던 스냅샷과 사건 카드는 그대로다
   const [storiesOpen, setStoriesOpen] = useState(false);
+  // 하단 패널의 "게시판" 탭. 화면 전체로 열리고, 닫으면 보던 스냅샷으로 돌아온다
+  const [boardOpen, setBoardOpen] = useState(false);
   // 로그인 상태. 로그인·닉네임·로그아웃 시트
   const [me, setMe] = useState<Me>(ANONYMOUS);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -124,7 +127,7 @@ export default function WarMapApp() {
   // 키보드 ←/→로도 넘긴다 (PC에서 볼 때). Esc는 사건 카드를 닫는다.
   // 이야기 화면이 열려 있으면 키는 그 화면이 받는다
   useEffect(() => {
-    if (storiesOpen || accountOpen) return;
+    if (storiesOpen || accountOpen || boardOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Escape") {
         setSelectedId(null);
@@ -134,7 +137,7 @@ export default function WarMapApp() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last, storiesOpen, accountOpen]);
+  }, [last, storiesOpen, accountOpen, boardOpen]);
 
   return (
     <main className="relative mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
@@ -194,7 +197,9 @@ export default function WarMapApp() {
       </div>
 
       {current && (
-        <section className="flex flex-col gap-4 rounded-t-[28px] bg-white px-5 pt-5 pb-[calc(24px+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(26,29,33,0.12)]">
+        <section className="flex flex-col gap-4 rounded-t-[28px] bg-white px-5 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(26,29,33,0.12)]">
+          <PanelTabs onBoard={() => setBoardOpen(true)} />
+
           {visibleEvents.length > 0 && <EventChips events={visibleEvents} onSelect={setSelectedId} />}
 
           <Timeline snapshots={snapshots} hasPrewar={hasPrewar} index={index} onSelect={goTo} />
@@ -233,6 +238,15 @@ export default function WarMapApp() {
       {selected && <EventCard event={selected} onClose={() => setSelectedId(null)} />}
 
       {storiesOpen && <StoriesPanel onClose={() => setStoriesOpen(false)} />}
+
+      {boardOpen && (
+        <BoardPanel
+          events={events}
+          me={me}
+          onNeedLogin={() => setAccountOpen(true)}
+          onClose={() => setBoardOpen(false)}
+        />
+      )}
 
       {accountOpen && (
         <AccountSheet
@@ -282,6 +296,26 @@ function PersonIcon({ filled }: { filled: boolean }) {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+// 하단 패널 맨 위의 탭: 지금 보는 "전선"과 화면 전체로 여는 "게시판"
+function PanelTabs({ onBoard }: { onBoard: () => void }) {
+  return (
+    <div role="tablist" aria-label="화면 고르기" className="flex rounded-full bg-fill p-1">
+      <button type="button" role="tab" aria-selected="true" className="h-9 flex-1 rounded-full bg-white text-sm font-bold shadow-sm">
+        전선
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected="false"
+        onClick={onBoard}
+        className="h-9 flex-1 rounded-full text-sm font-bold text-muted"
+      >
+        게시판
+      </button>
+    </div>
   );
 }
 

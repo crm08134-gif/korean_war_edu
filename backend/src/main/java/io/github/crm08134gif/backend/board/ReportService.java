@@ -49,8 +49,11 @@ public class ReportService {
 
         // 대상 행을 잠근다. 이 트랜잭션이 끝날 때까지 같은 대상의 다른 신고는 기다린다.
         // 그래서 "이미 신고했나"와 "2명이 찼나"를 세는 사이에 끼어드는 요청이 없다
-        Moderatable target = lock(type, targetId);
-        if (target.isWrittenBy(memberId)) {
+        Moderatable target = lock(type, targetId, false);
+        // 본인 글은 신고할 수 없다. 단 가려진 본인 글은 "기타"로 재검토를 요청할 수 있다 (운영 정책의 이의 제기).
+        // 이 요청은 관리자 큐에 오를 뿐이고, 이미 가려진 글이라 2명 기준에는 영향이 없다
+        if (target.isWrittenBy(memberId)
+                && !(target.getStatus() == PostStatus.BLINDED && reason == ReportReason.OTHER)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "본인 글은 신고할 수 없습니다");
         }
         if (reports.exists(type, targetId, memberId)) {
@@ -77,7 +80,8 @@ public class ReportService {
     @Transactional
     public void moderate(Long adminId, ReportTarget type, long targetId, PostStatus status) {
         Member admin = admin(adminId);
-        Moderatable target = lock(type, targetId);
+        // 작성자가 이미 지운 글도 큐에 남아 있을 수 있다. 그때는 상태는 그대로 두고(restore·blind가 지운 것은 건드리지 않는다) 신고만 닫는다
+        Moderatable target = lock(type, targetId, true);
         switch (status) {
             case VISIBLE -> target.restore();
             case BLINDED -> target.blind();
@@ -100,12 +104,12 @@ public class ReportService {
 
     // ---------- 확인 ----------
 
-    private Moderatable lock(ReportTarget type, long targetId) {
+    private Moderatable lock(ReportTarget type, long targetId, boolean allowDeleted) {
         Moderatable target = switch (type) {
             case POST -> posts.findForUpdate(targetId).orElse(null);
             case COMMENT -> comments.findForUpdate(targetId).orElse(null);
         };
-        if (target == null || target.isDeleted()) {
+        if (target == null || (target.isDeleted() && !allowDeleted)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다");
         }
         return target;

@@ -154,3 +154,59 @@ const DATE_TIME = new Intl.DateTimeFormat("ko-KR", {
 export function formatPostTime(iso: string): string {
   return DATE_TIME.format(new Date(iso));
 }
+
+// ---------- 신고 (4단계) ----------
+
+// 운영 정책의 금지 항목과 같다 (백엔드 ReportReason)
+export type ReportReason = "HATE" | "DEFAMATION" | "MOCKERY" | "PRIVACY" | "SPAM" | "OTHER";
+
+export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+  { value: "HATE", label: "특정 집단에 대한 혐오·비하" },
+  { value: "DEFAMATION", label: "실존 인물·유족에 대한 근거 없는 비방" },
+  { value: "MOCKERY", label: "학살·전쟁범죄 피해의 조롱·정당화" },
+  { value: "PRIVACY", label: "개인정보 노출" },
+  { value: "SPAM", label: "광고·도배" },
+  { value: "OTHER", label: "기타 (이유를 적어 주세요)" },
+];
+
+export const REPORT_DETAIL_LIMIT = 500;
+
+export type ReportKind = "posts" | "comments";
+
+export function report(kind: ReportKind, id: number, reason: ReportReason, detail: string): Promise<Result> {
+  return send(`/api/${kind}/${id}/report`, "POST", { reason, detail: detail.trim() || null });
+}
+
+// ---------- 관리자 큐 ----------
+
+export type QueueItem = {
+  targetType: "POST" | "COMMENT";
+  targetId: number;
+  postId: number;
+  status: "VISIBLE" | "BLINDED" | "DELETED";
+  title: string | null; // 댓글이면 null
+  body: string;
+  authorId: number;
+  author: string | null; // 탈퇴했으면 null
+  authorBannedUntil: string | null;
+  reports: number;
+  reasons: string; // "HATE,SPAM"
+  details: string | null;
+  lastReportedAt: string;
+};
+
+export async function fetchQueue(signal?: AbortSignal): Promise<QueueItem[]> {
+  const res = await apiFetch("/api/admin/reports", { signal });
+  if (!res.ok) throw new Error(`GET /api/admin/reports ${res.status}`);
+  return res.json();
+}
+
+export function moderate(item: QueueItem, status: "VISIBLE" | "BLINDED"): Promise<Result> {
+  const kind = item.targetType === "POST" ? "posts" : "comments";
+  return send(`/api/admin/${kind}/${item.targetId}/status`, "PUT", { status });
+}
+
+// days가 0이면 제재를 푼다
+export function ban(memberId: number, days: number): Promise<Result> {
+  return send(`/api/admin/members/${memberId}/ban`, "PUT", { days });
+}

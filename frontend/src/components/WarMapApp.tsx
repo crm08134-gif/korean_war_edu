@@ -6,12 +6,14 @@ import BoardPanel from "@/components/BoardPanel";
 import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
 import KindIcon from "@/components/KindIcon";
+import PolicySheet from "@/components/PolicySheet";
 import StoriesPanel from "@/components/StoriesPanel";
 import Timeline from "@/components/Timeline";
 import { ANONYMOUS, fetchMe, type Me } from "@/lib/auth";
 import { KIND_LABEL } from "@/lib/event-kinds";
 import { eventsBetween, fetchEvents, formatEventDate, formatStartDate, prewarEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
+import type { PolicyId } from "@/lib/policies";
 import { fetchSnapshots, formatDate, type Snapshot } from "@/lib/snapshots";
 
 // 불러오기 전에도 같은 배열을 써서 useMemo가 매번 다시 계산하지 않게 한다
@@ -28,6 +30,8 @@ export default function WarMapApp() {
   const [storiesOpen, setStoriesOpen] = useState(false);
   // 하단 패널의 "게시판" 탭. 화면 전체로 열리고, 닫으면 보던 스냅샷으로 돌아온다
   const [boardOpen, setBoardOpen] = useState(false);
+  // 운영 정책·이용약관·개인정보 처리방침. 게시판과 로그인 시트 위에 뜬다
+  const [policy, setPolicy] = useState<PolicyId | null>(null);
   // 로그인 상태. 로그인·닉네임·로그아웃 시트
   const [me, setMe] = useState<Me>(ANONYMOUS);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -244,6 +248,7 @@ export default function WarMapApp() {
           events={events}
           me={me}
           onNeedLogin={() => setAccountOpen(true)}
+          onOpenPolicy={setPolicy}
           onClose={() => setBoardOpen(false)}
         />
       )}
@@ -252,6 +257,7 @@ export default function WarMapApp() {
         <AccountSheet
           me={me}
           loginFailed={loginFailed}
+          onOpenPolicy={setPolicy}
           onChanged={() => {
             loadMe().then((result) => {
               if (result && !result.needsNickname) setAccountOpen(false);
@@ -263,6 +269,8 @@ export default function WarMapApp() {
           }}
         />
       )}
+
+      {policy && <PolicySheet initial={policy} onClose={() => setPolicy(null)} />}
     </main>
   );
 }

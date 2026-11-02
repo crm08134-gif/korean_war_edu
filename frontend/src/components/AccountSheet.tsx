@@ -3,17 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { CloseIcon } from "@/components/EventCard";
 import { LOGIN_URL, logout, NICKNAME_RULE, saveNickname, type Me } from "@/lib/auth";
+import type { PolicyId } from "@/lib/policies";
 
 // 머리말 카드의 사람 버튼으로 여는 시트: 로그인, 닉네임 정하기, 로그아웃.
 // 로그인 직후 닉네임이 없으면 저절로 열린다
 export default function AccountSheet({
   me,
   loginFailed,
+  onOpenPolicy,
   onChanged,
   onClose,
 }: {
   me: Me;
   loginFailed: boolean;
+  onOpenPolicy: (id: PolicyId) => void;
   onChanged: () => void;
   onClose: () => void;
 }) {
@@ -65,7 +68,7 @@ export default function AccountSheet({
           </button>
         </div>
 
-        {!me.loggedIn && <LoginButtons failed={loginFailed} />}
+        {!me.loggedIn && <LoginButtons failed={loginFailed} onOpenPolicy={onOpenPolicy} />}
         {me.loggedIn && (me.needsNickname || editing) && (
           <NicknameForm
             current={me.nickname}
@@ -91,7 +94,7 @@ export default function AccountSheet({
   );
 }
 
-function LoginButtons({ failed }: { failed: boolean }) {
+function LoginButtons({ failed, onOpenPolicy }: { failed: boolean; onOpenPolicy: (id: PolicyId) => void }) {
   return (
     <div className="flex flex-col gap-3">
       {failed && (
@@ -116,6 +119,17 @@ function LoginButtons({ failed }: { failed: boolean }) {
       >
         구글로 계속하기
       </a>
+      <p className="text-center text-xs leading-relaxed text-muted">
+        계속하면{" "}
+        <button type="button" onClick={() => onOpenPolicy("terms")} className="font-bold text-ink underline underline-offset-2">
+          이용약관
+        </button>
+        과{" "}
+        <button type="button" onClick={() => onOpenPolicy("privacy")} className="font-bold text-ink underline underline-offset-2">
+          개인정보 처리방침
+        </button>
+        에 동의하게 됩니다.
+      </p>
     </div>
   );
 }

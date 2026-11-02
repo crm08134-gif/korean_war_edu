@@ -130,6 +130,18 @@ class ReportSecurityTests {
     }
 
     @Test
+    void 가려진_본인_글은_기타로_재검토를_요청할_수_있다() {
+        User author = user("y");
+        long id = post(author);
+        assertThat(report(id, author, "OTHER")).hasStatus(HttpStatus.BAD_REQUEST);
+        sql("UPDATE post SET status = 'BLINDED' WHERE id = :id", id);
+        assertThat(report(id, author, "HATE")).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(as(json(mvc.post().uri("/api/posts/" + id + "/report"),
+                "{\"reason\":\"OTHER\",\"detail\":\"사료 근거가 있는 글입니다\"}"), author))
+                .hasStatus(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
     void 기타는_이유를_적어야_한다() {
         long id = post(user("i"));
         assertThat(report(id, user("j"), "OTHER")).hasStatus(HttpStatus.BAD_REQUEST);

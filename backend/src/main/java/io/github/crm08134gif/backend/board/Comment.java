@@ -16,7 +16,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "comment")
-public class Comment {
+public class Comment implements Moderatable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -55,15 +55,18 @@ public class Comment {
     public Post getPost() { return post; }
     public Member getAuthor() { return author; }
     public String getBody() { return body; }
+    @Override
     public PostStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 
+    @Override
     public boolean isDeleted() {
         return status == PostStatus.DELETED;
     }
 
     // 프록시라도 getId()는 SELECT 없이 나온다
+    @Override
     public boolean isWrittenBy(Long memberId) {
         return author.getId().equals(memberId);
     }
@@ -76,5 +79,21 @@ public class Comment {
     public void delete(Instant now) {
         this.status = PostStatus.DELETED;
         this.deletedAt = now;
+    }
+
+    // 신고 2명이 차거나 관리자가 가린다. 지운 것은 그대로 둔다
+    @Override
+    public void blind() {
+        if (status == PostStatus.VISIBLE) {
+            status = PostStatus.BLINDED;
+        }
+    }
+
+    // 관리자가 검토해서 되살린다
+    @Override
+    public void restore() {
+        if (status == PostStatus.BLINDED) {
+            status = PostStatus.VISIBLE;
+        }
     }
 }

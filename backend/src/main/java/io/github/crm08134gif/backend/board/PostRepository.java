@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
@@ -34,4 +36,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 작성 횟수 제한: 이 회원이 after 이후에 쓴 글 수
     long countByAuthor_IdAndCreatedAtAfter(Long authorId, Instant after);
+
+    // 신고·관리자 처리 때 대상 행을 잠근다. 두 사람이 동시에 신고해도 한 줄로 서서 "2명"을 정확히 센다
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Post p where p.id = :id")
+    Optional<Post> findForUpdate(long id);
 }

@@ -81,4 +81,9 @@ public class Member {
     public boolean isWriteBanned(Instant now) {
         return writeBannedUntil != null && writeBannedUntil.isAfter(now);
     }
+
+    // 관리자가 거는 글쓰기 제재. null이면 푼다
+    public void banWritingUntil(Instant until) {
+        this.writeBannedUntil = until;
+    }
 }

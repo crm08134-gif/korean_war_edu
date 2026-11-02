@@ -22,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 class BoardController {
 
     private final BoardService service;
+    private final ReportService reports;
 
-    BoardController(BoardService service) {
+    BoardController(BoardService service, ReportService reports) {
         this.service = service;
+        this.reports = reports;
     }
 
     // ---------- 읽기 (공개) ----------
@@ -112,6 +114,22 @@ class BoardController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void unlikeComment(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
         service.likeComment(memberId(jwt), id, false);
+    }
+
+    // ---------- 신고 (서로 다른 회원 2명이면 자동으로 가려진다) ----------
+
+    @PostMapping("/posts/{id}/report")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void reportPost(@AuthenticationPrincipal Jwt jwt, @PathVariable long id,
+                    @Valid @RequestBody ReportRequest request) {
+        reports.report(memberId(jwt), ReportTarget.POST, id, request.reason(), request.detail());
+    }
+
+    @PostMapping("/comments/{id}/report")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void reportComment(@AuthenticationPrincipal Jwt jwt, @PathVariable long id,
+                       @Valid @RequestBody ReportRequest request) {
+        reports.report(memberId(jwt), ReportTarget.COMMENT, id, request.reason(), request.detail());
     }
 
     // 공개 읽기: 로그인하지 않았으면 null

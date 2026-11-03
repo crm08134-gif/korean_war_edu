@@ -32,6 +32,15 @@ public class MemberService {
         return members.findById(id);
     }
 
+    // 탈퇴. 로그인 기록 삭제와 함께 하므로 TokenService.withdraw가 부른다
+    @Transactional
+    public void withdraw(Long memberId) {
+        Member member = members.findById(memberId)
+            .filter(m -> !m.isWithdrawn())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        member.withdraw(Instant.now());
+    }
+
     @Transactional
     public void changeNickname(Long memberId, String nickname) {
         // 토큰은 아직 살아 있어도(최대 15분) 탈퇴한 회원은 여기서 막는다

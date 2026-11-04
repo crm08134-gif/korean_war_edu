@@ -29,6 +29,11 @@ class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtEncoder jwtEncoder, SecretKey jwtSecretKey,
                                             MemberService memberService, TokenService tokenService,
                                             @Value("${auth.base-url}") String baseUrl) throws Exception {
+        // 이 파일의 "이름 -> 할 일"은 람다다. Spring Security 7은 설정을 이 모양으로만 받는다 (예전의 .and() 방식은 없어졌다).
+        //   .sessionManagement(session -> session.sessionCreationPolicy(...))
+        //   = "세션 설정 상자(session)를 줄 테니, 그 상자에 화살표 오른쪽 일을 해 달라"
+        //   화살표 왼쪽 이름(session, csrf, auth ...)은 우리가 붙이는 이름이라 아무 이름이나 된다.
+        //   오른쪽이 여러 줄이면 { } 로 묶는다 (아래 csrf)
         http
                 // 서버 세션을 만들지 않는다. 누구인지는 요청마다 쿠키의 JWT로 판단한다
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -47,10 +52,11 @@ class SecurityConfig {
                         }
                     });
                 })
-                // 로그아웃은 우리 /api/auth/logout이 한다
+                // 로그아웃은 우리 /api/auth/logout이 한다. Spring 기본 로그아웃 주소(/logout)는 끈다
                 .logout(logout -> logout.disable())
                 // 로그인이 필요한데 안 했으면 로그인 화면으로 보내지 않고 401만 준다 (프론트가 처리)
                 .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                // 주소마다 누가 들어올 수 있는지. 위에서부터 차례로 보고 처음 맞는 줄을 쓴다
                 .authorizeHttpRequests(auth -> auth
                         // 로그인 없이 읽는 공개 자료
                         .requestMatchers(HttpMethod.GET,
@@ -67,13 +73,16 @@ class SecurityConfig {
                         .requestMatchers("/api/**").authenticated()
                         // 위에 없는 주소는 모두 거부. /oauth2/..., /login/oauth2/...는 OAuth 필터가 권한 검사 전에 처리한다
                         .anyRequest().denyAll())
+                // 카카오·구글 로그인: 도중 상태는 쿠키에, 제공자 토큰은 버리고, 성공하면 우리 토큰을 발급한다
                 .oauth2Login(login -> login
                         .authorizationEndpoint(endpoint -> endpoint
                                 .authorizationRequestRepository(new OAuth2StateCookieRepository(jwtEncoder, jwtSecretKey)))
                         .authorizedClientRepository(new DiscardingAuthorizedClientRepository())
                         .successHandler(new OAuth2LoginSuccessHandler(memberService, tokenService, baseUrl))
-                        // 실패 이유를 주소에 싣지 않는다
+                        // 실패 이유를 주소에 싣지 않는다.
+                        // 람다가 값 셋(요청, 응답, 실패 이유)을 받는다. 실패 이유(exception)는 쓰지 않고 첫 화면으로 돌려보낸다
                         .failureHandler((request, response, exception) -> response.sendRedirect(baseUrl + "/?login=failed")))
+                // API 요청마다: 쿠키에서 액세스 토큰을 꺼내(CookieBearerTokenResolver) 검사하고, role을 권한으로 바꾼다
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .bearerTokenResolver(new CookieBearerTokenResolver())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));

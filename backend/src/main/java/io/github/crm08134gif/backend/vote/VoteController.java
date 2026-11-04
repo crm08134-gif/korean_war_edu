@@ -53,9 +53,10 @@ public class VoteController {
     // 토큰은 15분 동안 살아 있으므로 탈퇴했는지는 DB에서 다시 본다. 닉네임이 없으면 공감과 같이 막는다
     private long voter(Jwt jwt) {
         Long memberId = Long.valueOf(jwt.getSubject());
-        Member member = memberService.find(memberId)
-            .filter(m -> !m.isWithdrawn())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Member member = memberService.find(memberId).orElse(null);
+        if (member == null || member.isWithdrawn()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
         if (member.needsNickname()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "닉네임을 먼저 정해 주세요");
         }

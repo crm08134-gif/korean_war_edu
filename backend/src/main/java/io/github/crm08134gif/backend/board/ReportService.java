@@ -97,8 +97,10 @@ public class ReportService {
         if (days < 0 || days > MAX_BAN_DAYS) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "제재 기간은 0~365일입니다");
         }
-        Member member = members.findById(memberId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "없는 회원입니다"));
+        Member member = members.findById(memberId).orElse(null);
+        if (member == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "없는 회원입니다");
+        }
         member.banWritingUntil(days == 0 ? null : Instant.now().plus(Duration.ofDays(days)));
     }
 
@@ -117,9 +119,10 @@ public class ReportService {
 
     // 신고할 자격: 로그인, 닉네임, 탈퇴·제재 아님 (제재 중인 사람이 신고를 쏟아 내는 것을 막는다)
     private Member reporter(Long memberId) {
-        Member member = members.findById(memberId)
-            .filter(m -> !m.isWithdrawn())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Member member = members.findById(memberId).orElse(null);
+        if (member == null || member.isWithdrawn()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
         if (member.needsNickname()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "닉네임을 먼저 정해 주세요");
         }
@@ -132,8 +135,10 @@ public class ReportService {
     // 토큰의 role(ADMIN)은 SecurityConfig가 이미 봤다. 토큰은 15분 동안 살아 있으므로
     // 그 사이 관리자에서 내려온 사람을 막으려고 DB의 역할을 다시 본다
     private Member admin(Long memberId) {
-        return members.findById(memberId)
-            .filter(m -> !m.isWithdrawn() && m.getRole() == Role.ADMIN)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN));
+        Member member = members.findById(memberId).orElse(null);
+        if (member == null || member.isWithdrawn() || member.getRole() != Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        return member;
     }
 }

@@ -4,6 +4,7 @@ import io.github.crm08134gif.backend.member.Member;
 import io.github.crm08134gif.backend.member.MemberRepository;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.domain.Limit;
@@ -51,32 +52,43 @@ public class BoardService {
         List<Post> page = hasNext ? rows.subList(0, PAGE_SIZE) : rows;
 
         // 공감 수는 글 개수와 상관없이 쿼리 한 번
-        Map<Long, LikeCount> counts = likes.postCounts(page.stream().map(Post::getId).toList(), viewerId);
-        List<PostSummary> items = page.stream()
-            .map(p -> summary(p, counts.get(p.getId()), viewerId))
-            .toList();
+        List<Long> postIds = new ArrayList<>();
+        for (Post p : page) {
+            postIds.add(p.getId());
+        }
+        Map<Long, LikeCount> counts = likes.postCounts(postIds, viewerId);
+
+        List<PostSummary> items = new ArrayList<>();
+        for (Post p : page) {
+            items.add(summary(p, counts.get(p.getId()), viewerId));
+        }
         Long nextCursor = hasNext ? page.getLast().getId() : null;
         return new PostPage(items, nextCursor);
     }
 
     @Transactional(readOnly = true)
     public PostDetail detail(long postId, Long viewerId) {
-        Post post = posts.findWithAuthor(postId)
-            .filter(p -> !p.isDeleted())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다"));
+        Post post = posts.findWithAuthor(postId).orElse(null);
+        if (post == null || post.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다");
+        }
         List<Comment> rows = comments.findByPost(postId);
 
         LikeCount postLikes = likes.postCounts(List.of(postId), viewerId).get(postId);
-        Map<Long, LikeCount> commentLikes =
-            likes.commentCounts(rows.stream().map(Comment::getId).toList(), viewerId);
+        List<Long> commentIds = new ArrayList<>();
+        for (Comment c : rows) {
+            commentIds.add(c.getId());
+        }
+        Map<Long, LikeCount> commentLikes = likes.commentCounts(commentIds, viewerId);
 
         boolean mine = post.isWrittenBy(viewerId);
         boolean blinded = post.getStatus() == PostStatus.BLINDED;
         // 가려진 글은 화면에서 숨기는 게 아니라 서버가 내용을 아예 보내지 않는다. 작성자 본인에게만 보낸다
         boolean hidden = blinded && !mine;
-        List<CommentView> views = rows.stream()
-            .map(c -> view(c, commentLikes.get(c.getId()), viewerId))
-            .toList();
+        List<CommentView> views = new ArrayList<>();
+        for (Comment c : rows) {
+            views.add(view(c, commentLikes.get(c.getId()), viewerId));
+        }
 
         // 인수 순서는 PostDetail의 칸 순서와 같아야 한다 (같은 String끼리는 바뀌어도 컴파일 오류가 안 난다)
         return new PostDetail(
@@ -131,9 +143,10 @@ public class BoardService {
         if (comments.countByAuthor_IdAndCreatedAtAfter(memberId, now.minus(MINUTE)) >= 5) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "댓글은 1분에 5개까지 쓸 수 있습니다");
         }
-        Post post = posts.findById(postId)
-            .filter(p -> !p.isDeleted())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다"));
+        Post post = posts.findById(postId).orElse(null);
+        if (post == null || post.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다");
+        }
         if (post.getStatus() == PostStatus.BLINDED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "가려진 글에는 댓글을 달 수 없습니다");
         }
@@ -219,9 +232,10 @@ public class BoardService {
 
     // 글·댓글을 쓰거나 고칠 자격. 회원 행을 잠가 같은 회원의 쓰기 요청을 한 줄로 세운다
     private Member writer(Long memberId) {
-        Member member = members.findForUpdate(memberId)
-            .filter(m -> !m.isWithdrawn())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Member member = members.findForUpdate(memberId).orElse(null);
+        if (member == null || member.isWithdrawn()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
         if (member.needsNickname()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "닉네임을 먼저 정해 주세요");
         }
@@ -233,9 +247,10 @@ public class BoardService {
 
     // 지우기·공감 자격. 제재 중이어도 된다
     private Member activeMember(Long memberId) {
-        Member member = members.findById(memberId)
-            .filter(m -> !m.isWithdrawn())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Member member = members.findById(memberId).orElse(null);
+        if (member == null || member.isWithdrawn()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
         if (member.needsNickname()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "닉네임을 먼저 정해 주세요");
         }
@@ -243,9 +258,10 @@ public class BoardService {
     }
 
     private Post ownPost(Long memberId, long postId) {
-        Post post = posts.findById(postId)
-            .filter(p -> !p.isDeleted())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다"));
+        Post post = posts.findById(postId).orElse(null);
+        if (post == null || post.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다");
+        }
         if (!post.isWrittenBy(memberId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 글만 고치거나 지울 수 있습니다");
         }
@@ -253,9 +269,10 @@ public class BoardService {
     }
 
     private Comment ownComment(Long memberId, long commentId) {
-        Comment comment = comments.findById(commentId)
-            .filter(c -> !c.isDeleted())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다"));
+        Comment comment = comments.findById(commentId).orElse(null);
+        if (comment == null || comment.isDeleted()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다");
+        }
         if (!comment.isWrittenBy(memberId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 댓글만 고치거나 지울 수 있습니다");
         }

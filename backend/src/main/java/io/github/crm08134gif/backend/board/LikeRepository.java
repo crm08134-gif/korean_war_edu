@@ -1,10 +1,9 @@
 package io.github.crm08134gif.backend.board;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -105,6 +104,11 @@ public class LikeRepository {
             .param("memberId", memberId)
             .query(LikeCount.class)
             .list();
-        return rows.stream().collect(Collectors.toMap(LikeCount::id, Function.identity()));
+        // 글(댓글) id → 공감 수. GROUP BY라 id마다 한 줄뿐이다
+        Map<Long, LikeCount> counts = new HashMap<>();
+        for (LikeCount row : rows) {
+            counts.put(row.id(), row);
+        }
+        return counts;
     }
 }

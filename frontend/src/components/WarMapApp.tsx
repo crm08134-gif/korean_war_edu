@@ -239,7 +239,14 @@ export default function WarMapApp() {
         </section>
       )}
 
-      {selected && <EventCard event={selected} onClose={() => setSelectedId(null)} />}
+      {selected && (
+        <EventCard
+          event={selected}
+          canVote={me.loggedIn && !me.needsNickname}
+          onNeedLogin={() => setAccountOpen(true)}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
 
       {storiesOpen && <StoriesPanel onClose={() => setStoriesOpen(false)} />}
 

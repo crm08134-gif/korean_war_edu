@@ -1,5 +1,5 @@
 // 관련 인물 호감도(좋아요·싫어요). 백엔드 VoteController와 같은 모양
-// 회원 기능이 생기기 전이라, 브라우저마다 익명 ID를 하나 만들어 X-Voter-Id 머리글로 보낸다
+// 숫자는 누구나 보고, 누르려면 로그인해야 한다 (2026-11-04 결정). 누가 눌렀는지는 로그인 쿠키(회원 번호)로 서버가 정한다
 
 import { apiFetch } from "@/lib/api";
 
@@ -9,40 +9,15 @@ export type VoteCount = {
   personId: string;
   up: number;
   down: number;
-  mine: VoteValue; // 이 기기가 누른 표. 누르지 않았으면 0
+  mine: VoteValue; // 내가 누른 표. 누르지 않았거나 로그인하지 않았으면 0
 };
 
-const VOTER_KEY = "korean-war-voter-id";
-let memoryVoterId: string | null = null;
-
-// crypto.randomUUID는 HTTPS나 localhost에서만 있어서, 어디서나 되는 getRandomValues로 만든다
-function newUuid(): string {
-  const b = crypto.getRandomValues(new Uint8Array(16));
-  b[6] = (b[6] & 0x0f) | 0x40; // 버전 4
-  b[8] = (b[8] & 0x3f) | 0x80; // RFC 4122 변형
-  const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
-}
-
-// 처음 한 번 만들어 브라우저에 남긴다. 저장소를 못 쓰는 창(사생활 보호 모드 등)에서는 이번 방문 동안만 쓴다
-export function voterId(): string {
-  try {
-    const saved = localStorage.getItem(VOTER_KEY);
-    if (saved) return saved;
-    const id = newUuid();
-    localStorage.setItem(VOTER_KEY, id);
-    return id;
-  } catch {
-    memoryVoterId ??= newUuid();
-    return memoryVoterId;
-  }
-}
-
+// 읽기는 공개다. 만료된 로그인 쿠키가 남아 있으면 401이 오는데, apiFetch가 갱신을 시도하고
+// 그것도 실패하면 서버가 쿠키를 지운다. 그때는 비로그인으로 한 번 더 읽는다 (게시판과 같은 방식)
 export async function fetchVotes(eventId: string, signal?: AbortSignal): Promise<VoteCount[]> {
-  const res = await fetch(`/api/votes?eventId=${encodeURIComponent(eventId)}`, {
-    headers: { "X-Voter-Id": voterId() },
-    signal,
-  });
+  const path = `/api/votes?eventId=${encodeURIComponent(eventId)}`;
+  let res = await apiFetch(path, { signal });
+  if (res.status === 401) res = await fetch(path, { signal });
   if (!res.ok) throw new Error(`GET /api/votes ${res.status}`);
   return res.json();
 }
@@ -52,7 +27,7 @@ export async function putVote(eventId: string, personId: string, value: VoteValu
   // 쓰기 요청이라 CSRF 머리글이 필요하다 (apiFetch가 붙인다)
   const res = await apiFetch("/api/votes", {
     method: "PUT",
-    headers: { "Content-Type": "application/json", "X-Voter-Id": voterId() },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ eventId, personId, value }),
   });
   if (!res.ok) throw new Error(`PUT /api/votes ${res.status}`);

@@ -16,7 +16,17 @@ import {
 import type { Story } from "@/lib/stories";
 
 // 사건 카드. 2~3분 읽을거리라 지도를 덮고 화면 전체로 연다. 닫으면 보던 지도로 돌아간다
-export default function EventCard({ event, onClose }: { event: WarEvent; onClose: () => void }) {
+export default function EventCard({
+  event,
+  canVote,
+  onNeedLogin,
+  onClose,
+}: {
+  event: WarEvent;
+  canVote: boolean;
+  onNeedLogin: () => void;
+  onClose: () => void;
+}) {
   // 관련 인물 시트. 다른 사건을 열면 닫힌 채로 시작한다
   const [peopleOpenFor, setPeopleOpenFor] = useState<string | null>(null);
   const peopleOpen = peopleOpenFor === event.id;
@@ -56,7 +66,16 @@ export default function EventCard({ event, onClose }: { event: WarEvent; onClose
           }
         />
       </div>
-      {peopleOpen && <PeopleSheet eventId={event.id} title={event.title} people={event.people} onClose={() => setPeopleOpenFor(null)} />}
+      {peopleOpen && (
+        <PeopleSheet
+          eventId={event.id}
+          title={event.title}
+          people={event.people}
+          canVote={canVote}
+          onNeedLogin={onNeedLogin}
+          onClose={() => setPeopleOpenFor(null)}
+        />
+      )}
     </div>
   );
 }

@@ -11,11 +11,16 @@ export default function PeopleSheet({
   eventId,
   title,
   people,
+  canVote,
+  onNeedLogin,
   onClose,
 }: {
   eventId: string;
   title: string;
   people: EventPerson[];
+  // 로그인하고 닉네임을 정한 회원만 누를 수 있다. 아니면 누를 때 로그인 시트를 연다
+  canVote: boolean;
+  onNeedLogin: () => void;
   onClose: () => void;
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -30,10 +35,14 @@ export default function PeopleSheet({
         if (!controller.signal.aborted) console.error(error);
       });
     return () => controller.abort();
-  }, [eventId]);
+  }, [eventId, canVote]);
 
   // 누르면 숫자를 먼저 바꿔 보여 주고, 서버가 준 수로 맞춘다. 실패하면 누르기 전으로 되돌린다
   const vote = (personId: string, pressed: 1 | -1) => {
+    if (!canVote) {
+      onNeedLogin();
+      return;
+    }
     const before = votes;
     const current = before.get(personId) ?? { personId, up: 0, down: 0, mine: 0 };
     const value: VoteValue = current.mine === pressed ? 0 : pressed;

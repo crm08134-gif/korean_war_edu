@@ -8,7 +8,7 @@ export type PolicySection = { heading: string; paragraphs?: string[]; items?: st
 
 export type Policy = { id: PolicyId; title: string; updated: string; sections: PolicySection[] };
 
-export const DRAFT_NOTICE = "공개 전 초안입니다. 운영자가 검토한 뒤 [ ]로 표시한 칸을 채우고 시행합니다.";
+export const DRAFT_NOTICE = "[ ]로 표시한 칸은 서버 환경이 정해지면 채웁니다.";
 
 export const RULES_SUMMARY = [
   "사료를 근거로 한 서로 다른 해석과 토론을 환영합니다. 의견이 다르다는 이유만으로 가리지 않습니다.",
@@ -20,7 +20,7 @@ export const POLICIES: Record<PolicyId, Policy> = {
   rules: {
     id: "rules",
     title: "운영 정책",
-    updated: "시행일 [    ]",
+    updated: "시행일 2026년 11월 4일",
     sections: [
       {
         heading: "이 게시판의 목적",
@@ -61,12 +61,12 @@ export const POLICIES: Record<PolicyId, Policy> = {
   terms: {
     id: "terms",
     title: "이용약관",
-    updated: "시행일 [    ]",
+    updated: "시행일 2026년 11월 4일",
     sections: [
       {
         heading: "1. 서비스",
         paragraphs: [
-          "Korean War(이하 \"서비스\")는 6·25 전쟁의 전선 변화와 주요 사건을 지도로 보여 주는 교육용·비상업 웹 앱입니다. 운영자는 [운영자 이름]입니다.",
+          "Korean War(이하 \"서비스\")는 6·25 전쟁의 전선 변화와 주요 사건을 지도로 보여 주는 교육용·비상업 웹 앱입니다. 운영자는 강희범입니다.",
           "지도·사건·이야기는 로그인 없이 볼 수 있습니다. 게시판 글쓰기·댓글·공감·신고에는 로그인이 필요합니다.",
         ],
       },
@@ -84,7 +84,7 @@ export const POLICIES: Record<PolicyId, Policy> = {
         items: [
           "회원이 쓴 글의 저작권은 쓴 사람에게 있습니다. 회원은 서비스가 그 글을 게시판에 보여 주는 데 필요한 범위에서 이용하는 것을 허락합니다.",
           "글의 내용에 대한 책임은 쓴 사람에게 있습니다. 운영 정책을 어긴 글은 가려지거나 글쓰기가 제한될 수 있습니다.",
-          "다른 사람의 저작물이나 권리를 침해하는 글을 올리지 않습니다. 권리를 침해당했다면 [연락처]로 알려 주세요.",
+          "다른 사람의 저작물이나 권리를 침해하는 글을 올리지 않습니다. 권리를 침해당했다면 crm08134@gmail.com로 알려 주세요.",
         ],
       },
       {
@@ -96,12 +96,12 @@ export const POLICIES: Record<PolicyId, Policy> = {
       {
         heading: "5. 자료의 정확성",
         paragraphs: [
-          "사건과 인물 설명은 출처 목록에 적은 공개 자료를 바탕으로 썼습니다. 자료마다 날짜·수치가 다르면 함께 적었지만, 틀린 내용이 있을 수 있습니다. 발견하면 [연락처]로 알려 주세요.",
+          "사건과 인물 설명은 출처 목록에 적은 공개 자료를 바탕으로 썼습니다. 자료마다 날짜·수치가 다르면 함께 적었지만, 틀린 내용이 있을 수 있습니다. 발견하면 crm08134@gmail.com로 알려 주세요.",
         ],
       },
       {
         heading: "6. 문의",
-        paragraphs: ["[연락처]"],
+        paragraphs: ["crm08134@gmail.com"],
       },
     ],
   },
@@ -109,7 +109,7 @@ export const POLICIES: Record<PolicyId, Policy> = {
   privacy: {
     id: "privacy",
     title: "개인정보 처리방침",
-    updated: "시행일 [    ]",
+    updated: "시행일 2026년 11월 4일",
     sections: [
       {
         heading: "1. 처리하는 개인정보",
@@ -174,7 +174,7 @@ export const POLICIES: Record<PolicyId, Policy> = {
       },
       {
         heading: "8. 개인정보 보호 책임자",
-        paragraphs: ["[이름] · [연락처]"],
+        paragraphs: ["강희범 · crm08134@gmail.com"],
       },
       {
         heading: "9. 바뀌는 경우",

@@ -15,8 +15,13 @@ final class CookieBearerTokenResolver implements BearerTokenResolver {
     @Override
     public String resolve(HttpServletRequest request) {
         String path = request.getRequestURI();
-        if (!path.startsWith("/api/") || SKIP.stream().anyMatch(path::startsWith)) {
+        if (!path.startsWith("/api/")) {
             return null;
+        }
+        for (String skip : SKIP) {
+            if (path.startsWith(skip)) {
+                return null;
+            }
         }
         return AuthCookies.read(request, AuthCookies.ACCESS);
     }

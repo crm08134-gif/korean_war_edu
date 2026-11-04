@@ -23,8 +23,12 @@ public class MemberService {
     // 소셜 로그인 성공 때. 처음 온 사람이면 회원을 만든다
     @Transactional
     public Member findOrCreate(String provider, String providerUserId) {
-        return members.findByProviderAndProviderUserId(provider, providerUserId)
-            .orElseGet(() -> members.save(new Member(provider, providerUserId)));
+        // 저장소는 "없을 수도 있음" 상자(Optional)를 준다. orElse(null): 없으면 null을 꺼낸다
+        Member member = members.findByProviderAndProviderUserId(provider, providerUserId).orElse(null);
+        if (member == null) {
+            member = members.save(new Member(provider, providerUserId));
+        }
+        return member;
     }
 
     @Transactional(readOnly = true)
@@ -35,21 +39,25 @@ public class MemberService {
     // 탈퇴. 로그인 기록 삭제와 함께 하므로 TokenService.withdraw가 부른다
     @Transactional
     public void withdraw(Long memberId) {
-        Member member = members.findById(memberId)
-            .filter(m -> !m.isWithdrawn())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Member member = members.findById(memberId).orElse(null);
+        if (member == null || member.isWithdrawn()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
         member.withdraw(Instant.now());
     }
 
     @Transactional
     public void changeNickname(Long memberId, String nickname) {
         // 토큰은 아직 살아 있어도(최대 15분) 탈퇴한 회원은 여기서 막는다
-        Member member = members.findById(memberId)
-            .filter(m -> !m.isWithdrawn())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Member member = members.findById(memberId).orElse(null);
+        if (member == null || member.isWithdrawn()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
         String lower = nickname.toLowerCase(Locale.ROOT);
-        if (RESERVED.stream().anyMatch(lower::contains)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "쓸 수 없는 닉네임입니다");
+        for (String word : RESERVED) {
+            if (lower.contains(word)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "쓸 수 없는 닉네임입니다");
+            }
         }
         Instant now = Instant.now();
         if (!member.canChangeNickname(now)) {

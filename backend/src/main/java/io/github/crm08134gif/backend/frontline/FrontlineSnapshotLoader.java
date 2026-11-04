@@ -2,6 +2,7 @@ package io.github.crm08134gif.backend.frontline;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,10 +49,11 @@ public class FrontlineSnapshotLoader implements ApplicationRunner{
     public void run(ApplicationArguments args) throws IOException{
         List<SnapshotCsvRow> rows = readCsv();
         checkStrayFiles(rows);
+        List<LocalDate> dates = new ArrayList<>();
         for (SnapshotCsvRow row : rows){
             upsert(row);
+            dates.add(row.snapshotDate());
         }
-        List<LocalDate> dates = rows.stream().map(SnapshotCsvRow::snapshotDate).toList();
         int deleted = jdbc.sql("DELETE FROM frontline_snapshot WHERE snapshot_date NOT IN (:dates)")
             .param("dates", dates)
             .update();

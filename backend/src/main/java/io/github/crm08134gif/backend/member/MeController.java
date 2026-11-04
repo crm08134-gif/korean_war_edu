@@ -29,10 +29,12 @@ class MeController {
         if (jwt == null) {
             return MeResponse.anonymous();
         }
-        return memberService.find(Long.valueOf(jwt.getSubject()))
-            .filter(member -> !member.isWithdrawn())
-            .map(MeResponse::of)
-            .orElse(MeResponse.anonymous());
+        // 토큰은 남아 있어도 그 사이 탈퇴했으면 로그인하지 않은 것으로 본다
+        Member member = memberService.find(Long.valueOf(jwt.getSubject())).orElse(null);
+        if (member == null || member.isWithdrawn()) {
+            return MeResponse.anonymous();
+        }
+        return MeResponse.of(member);
     }
 
     @PutMapping("/nickname")

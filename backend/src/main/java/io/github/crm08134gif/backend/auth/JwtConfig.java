@@ -43,6 +43,8 @@ class JwtConfig {
     // 서명, 만료, 발급자, 용도(aud)를 모두 확인한다. 용도가 다른 토큰(로그인 도중 쿠키)을 액세스 토큰으로 쓰지 못하게
     static NimbusJwtDecoder decoder(SecretKey key, String audience) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        // 마지막 줄의 aud -> ...는 람다다: "토큰의 aud 값을 받아서, 비어 있지 않고 audience가 들어 있으면 통과".
+        // JwtClaimValidator가 이 검사 규칙을 람다로 받는다
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
                 JwtValidators.createDefaultWithIssuer(ISSUER),
                 new JwtClaimValidator<List<String>>(JwtClaimNames.AUD, aud -> aud != null && aud.contains(audience))));

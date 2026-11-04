@@ -70,8 +70,11 @@ public class TokenService {
 
     @Transactional
     public void logout(String rawRefreshToken) {
-        refreshTokens.findByTokenHash(hash(rawRefreshToken))
-            .ifPresent(token -> refreshTokens.revokeFamily(token.getFamilyId(), Instant.now()));
+        RefreshToken token = refreshTokens.findByTokenHash(hash(rawRefreshToken)).orElse(null);
+        // 모르는 토큰이면 할 일이 없다 (이미 지워졌거나 위조). 쿠키는 컨트롤러가 어쨌든 지운다
+        if (token != null) {
+            refreshTokens.revokeFamily(token.getFamilyId(), Instant.now());
+        }
     }
 
     // 탈퇴: 회원 정보 지우기와 로그인 기록 삭제를 한 트랜잭션으로. 하나만 되고 하나는 안 되는 일이 없게 한다.

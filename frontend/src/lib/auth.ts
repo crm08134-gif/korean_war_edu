@@ -46,3 +46,11 @@ export async function saveNickname(nickname: string): Promise<string | null> {
 export async function logout(): Promise<void> {
   await apiFetch("/api/auth/logout", { method: "POST" });
 }
+
+// 탈퇴. 성공하면 null, 못 했으면 화면에 보일 이유. 서버가 로그인 쿠키도 지운다
+export async function withdraw(): Promise<string | null> {
+  const res = await apiFetch("/api/me", { method: "DELETE" });
+  if (res.ok) return null;
+  if (res.status === 401) return "로그인이 끊겼습니다. 다시 로그인해 주세요";
+  return "탈퇴하지 못했습니다. 잠시 뒤 다시 해 주세요";
+}

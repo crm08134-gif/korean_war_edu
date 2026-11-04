@@ -1,6 +1,7 @@
 package io.github.crm08134gif.backend.auth;
 
 import io.github.crm08134gif.backend.member.Member;
+import io.github.crm08134gif.backend.member.MemberService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -29,10 +30,12 @@ public class TokenService {
 
     private final JwtEncoder jwtEncoder;
     private final RefreshTokenRepository refreshTokens;
+    private final MemberService memberService;
 
-    TokenService(JwtEncoder jwtEncoder, RefreshTokenRepository refreshTokens) {
+    TokenService(JwtEncoder jwtEncoder, RefreshTokenRepository refreshTokens, MemberService memberService) {
         this.jwtEncoder = jwtEncoder;
         this.refreshTokens = refreshTokens;
+        this.memberService = memberService;
     }
 
     // 새로 로그인한 기기에는 새 묶음(family)을 만든다
@@ -69,6 +72,14 @@ public class TokenService {
     public void logout(String rawRefreshToken) {
         refreshTokens.findByTokenHash(hash(rawRefreshToken))
             .ifPresent(token -> refreshTokens.revokeFamily(token.getFamilyId(), Instant.now()));
+    }
+
+    // 탈퇴: 회원 정보 지우기와 로그인 기록 삭제를 한 트랜잭션으로. 하나만 되고 하나는 안 되는 일이 없게 한다.
+    // 남은 액세스 토큰(최대 15분)은 쓰기 요청마다 DB의 탈퇴 여부를 보므로 바로 막힌다
+    @Transactional
+    public void withdraw(Long memberId) {
+        memberService.withdraw(memberId);
+        refreshTokens.deleteByMember(memberId);
     }
 
     private IssuedTokens issue(Member member, UUID familyId, String userAgent) {

@@ -81,4 +81,21 @@ public class Member {
     public boolean isWriteBanned(Instant now) {
         return writeBannedUntil != null && writeBannedUntil.isAfter(now);
     }
+
+    // 관리자가 거는 글쓰기 제재. null이면 푼다
+    public void banWritingUntil(Instant until) {
+        this.writeBannedUntil = until;
+    }
+
+    // 탈퇴: 사람을 알아볼 수 있는 값을 모두 지운다. 행은 남긴다 (글·신고가 이 번호를 가리킨다)
+    // 회원 번호가 지워지므로 같은 카카오·구글 계정으로 다시 로그인하면 새 회원이 된다 (사용자 결정, CLAUDE.md 7장)
+    public void withdraw(Instant now) {
+        this.provider = null;
+        this.providerUserId = null;
+        this.nickname = null;
+        this.nicknameChangedAt = null;
+        this.role = Role.USER;
+        this.writeBannedUntil = null;
+        this.withdrawnAt = now;
+    }
 }

@@ -22,4 +22,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE RefreshToken t SET t.revokedAt = :now WHERE t.familyId = :familyId AND t.revokedAt IS NULL")
     int revokeFamily(@Param("familyId") UUID familyId, @Param("now") Instant now);
+
+    // 탈퇴: 이 회원의 로그인 기록을 모두 지운다. 기기 정보(브라우저 이름)도 개인정보라 폐기 표시가 아니라 삭제한다
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM RefreshToken t WHERE t.member.id = :memberId")
+    int deleteByMember(@Param("memberId") Long memberId);
 }

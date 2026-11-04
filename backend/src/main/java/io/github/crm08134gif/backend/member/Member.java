@@ -76,4 +76,9 @@ public class Member {
         this.nickname = nickname;
         this.nicknameChangedAt = now;
     }
+
+    // 제재 중인가. writeBannedUntil이 없거나 이미 지났으면 아니다
+    public boolean isWriteBanned(Instant now) {
+        return writeBannedUntil != null && writeBannedUntil.isAfter(now);
+    }
 }

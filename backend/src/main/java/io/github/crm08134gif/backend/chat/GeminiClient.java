@@ -12,8 +12,8 @@ import org.springframework.web.client.RestClient;
 @Component
 class GeminiClient {
 
-    // 답의 최대 길이(토큰). 3~6문장 답에는 넉넉하다
-    private static final int MAX_OUTPUT_TOKENS = 1024;
+    // 답의 최대 길이(토큰). 10문장 답에 넉넉하게 둔다 (넘으면 답이 중간에 잘린다)
+    private static final int MAX_OUTPUT_TOKENS = 2048;
 
     private final RestClient rest;
     private final String apiKey;

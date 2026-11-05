@@ -5,7 +5,7 @@ import { CloseIcon } from "@/components/EventCard";
 import { askChat, MAX_QUESTION, type ChatTarget, type ChatTurn } from "@/lib/chat";
 
 // 처음 열었을 때 눌러 볼 수 있는 질문
-const SUGGESTIONS = ["배경을 더 쉽게 설명해 주세요", "이 일이 왜 중요했나요?", "그 뒤에 어떻게 됐나요?"];
+const SUGGESTIONS = ["그 뒤에 어떻게 됐나요?", "양쪽 지휘관은 어떤 사람이었나요?", "비슷한 다른 전투가 있나요?"];
 
 // 사건·이야기 카드의 "AI에게 묻기" 버튼으로 여는 시트. 카드 내용을 바탕으로 AI(Gemini)가 답한다.
 // 대화는 이 시트 안에만 있고, 닫으면 사라진다
@@ -109,7 +109,7 @@ export default function ChatSheet({
         </div>
 
         <p className="px-5 pb-3 text-xs leading-relaxed text-muted">
-          이 카드의 내용을 바탕으로 AI(구글 Gemini)가 답합니다. AI 답변은 틀릴 수 있으니 카드의 출처로 확인해 주세요.
+          카드에 없는 배경이나 그 뒤의 일을 AI(구글 Gemini)가 설명합니다. 카드와 달리 검수하지 않은 답이라 틀릴 수 있습니다.
           질문은 구글로 보내지므로 개인정보는 적지 마세요.
         </p>
 
@@ -137,7 +137,7 @@ export default function ChatSheet({
               // 답은 글자로만 보인다 (HTML로 해석하지 않는다). 줄바꿈만 살린다
               <div key={i} className="flex max-w-[92%] flex-col gap-1 self-start">
                 <p className="rounded-2xl bg-fill px-4 py-3 text-[15px] leading-[1.75] whitespace-pre-line">{turn.text}</p>
-                <span className="px-1 text-[11px] text-muted">AI 답변 · 틀릴 수 있음</span>
+                <span className="px-1 text-[11px] text-muted">AI 답변 · 운영자가 검수하지 않은 내용이며 틀릴 수 있음</span>
               </div>
             ),
           )}

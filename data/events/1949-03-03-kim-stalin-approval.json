@@ -46,7 +46,7 @@
           "locator": "2장 182~191쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "stalin",
@@ -66,7 +66,7 @@
           "locator": "2장 182~191쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "pak-hon-yong",
@@ -86,7 +86,7 @@
           "locator": "2장 182~191쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "shtykov",
@@ -102,7 +102,7 @@
           "locator": "문서 1·9·10·12, 36~39쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

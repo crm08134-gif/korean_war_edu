@@ -43,7 +43,7 @@
           "locator": "3장 87~193쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "edward-almond",
@@ -55,7 +55,7 @@
           "locator": "25장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

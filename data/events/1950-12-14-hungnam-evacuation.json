@@ -42,7 +42,7 @@
           "locator": "6장 550~562쪽, 7장 595~610쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "leonard-larue",
@@ -58,7 +58,7 @@
           "locator": "7장 595~610쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

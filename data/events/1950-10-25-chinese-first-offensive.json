@@ -42,7 +42,7 @@
           "locator": "33장, 36장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "lim-bu-taek",
@@ -58,7 +58,7 @@
           "locator": "4장 269~376쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

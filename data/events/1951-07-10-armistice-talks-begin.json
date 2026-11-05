@@ -42,7 +42,7 @@
           "locator": "3장 130~162쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "nam-il",
@@ -58,7 +58,7 @@
           "locator": "3장 130~162쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "paik-sun-yup",
@@ -74,7 +74,7 @@
           "locator": "2장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

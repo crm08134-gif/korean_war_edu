@@ -45,7 +45,7 @@
           "locator": "한국 원조 법안 부결에 대한 대통령 성명과 국무장관 서한, 212쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "macarthur",
@@ -65,7 +65,7 @@
           "locator": "Crisis in Asia—An Examination of U.S. Policy, 111~118쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

@@ -42,7 +42,7 @@
           "locator": "2장 190~191·205~208쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "mao-zedong",
@@ -58,7 +58,7 @@
           "locator": "2장 205~208쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "zhou-enlai",
@@ -74,7 +74,7 @@
           "locator": "2장 205~208쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

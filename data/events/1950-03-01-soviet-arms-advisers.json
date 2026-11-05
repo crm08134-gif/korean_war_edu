@@ -43,7 +43,7 @@
           "locator": "2장 183·189~191쪽, 3장 281~285쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "kim-il-sung",
@@ -59,7 +59,7 @@
           "locator": "2장 189~191쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "vasiliev",
@@ -75,7 +75,7 @@
           "locator": "3장 294~296쪽, 218쪽 주 235·237"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "kang-kon",
@@ -91,7 +91,7 @@
           "locator": "2장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

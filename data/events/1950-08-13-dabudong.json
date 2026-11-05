@@ -45,7 +45,7 @@
           "locator": "3장 109~188쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "walton-walker",
@@ -57,7 +57,7 @@
           "locator": "19장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

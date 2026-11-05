@@ -39,7 +39,7 @@
           "locator": "2장 184·204~206쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "kim-il",
@@ -55,7 +55,7 @@
           "locator": "2장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "pang-ho-san",
@@ -67,7 +67,7 @@
           "locator": "2장, 13장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

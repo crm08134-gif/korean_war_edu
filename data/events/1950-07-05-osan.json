@@ -39,7 +39,7 @@
           "locator": "6장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "lee-kwon-mu",
@@ -51,7 +51,7 @@
           "locator": "6장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

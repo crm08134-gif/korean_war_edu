@@ -44,7 +44,7 @@
           "locator": "8장 693~782쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "nam-il",
@@ -60,7 +60,7 @@
           "locator": "8장 693~782쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "mark-clark",
@@ -76,7 +76,7 @@
           "locator": "8장 693~782쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "kim-il-sung",
@@ -88,7 +88,7 @@
           "locator": "8장 693~782쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "peng-dehuai",
@@ -104,7 +104,7 @@
           "locator": "3장 130~162쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "syngman-rhee",
@@ -120,7 +120,7 @@
           "locator": "8장 693~782쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

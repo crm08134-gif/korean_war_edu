@@ -44,7 +44,7 @@
           "locator": "26장, 28장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "macarthur",
@@ -60,7 +60,7 @@
           "locator": "3장 144~193쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "syngman-rhee",
@@ -76,7 +76,7 @@
           "locator": "3장 144~193쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

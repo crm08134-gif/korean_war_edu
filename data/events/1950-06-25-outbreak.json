@@ -47,7 +47,7 @@
           "locator": "문서 14(1950. 6. 26. 스티코프 보고) 39쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "chae-byong-duk",
@@ -59,7 +59,7 @@
           "locator": "3장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "lee-hyung-koon",
@@ -71,7 +71,7 @@
           "locator": "3장"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

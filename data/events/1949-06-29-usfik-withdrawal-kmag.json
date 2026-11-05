@@ -43,7 +43,7 @@
           "locator": "2장 119~126쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "hodge",
@@ -59,7 +59,7 @@
           "locator": "2장 119~126쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "truman",
@@ -75,7 +75,7 @@
           "locator": "2장 119~126쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "william-l-roberts",
@@ -91,7 +91,7 @@
           "locator": "2장 119~126쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

@@ -47,7 +47,7 @@
           "locator": "6장 433~492쪽"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     },
     {
       "personId": "bruce-ferguson",
@@ -59,7 +59,7 @@
           "locator": "본문"
         }
       ],
-      "status": "draft"
+      "status": "reviewed"
     }
   ],
   "status": "reviewed"

@@ -1,0 +1,23 @@
+id,name,group,flag,personnel,killed,casualties,unit,note,status
+us,미국,combat,us,1789000,36574,136884,,,draft
+gb,영국,combat,gb,81084,1106,4937,,,draft
+ca,캐나다,combat,,26791,516,1761,,,draft
+tr,튀르키예,combat,,21212,900,2299,,,draft
+au,오스트레일리아,combat,au,17164,340,1586,,,draft
+gr,그리스,combat,,10255,194,740,,,draft
+ph,필리핀,combat,,7420,112,468,,,draft
+th,태국,combat,,6326,136,1280,,,draft
+nl,네덜란드,combat,,5322,125,773,,,draft
+co,콜롬비아,combat,,5100,213,689,,,draft
+nz,뉴질랜드,combat,,3794,45,125,,,draft
+et,에티오피아,combat,,3518,122,658,,,draft
+be,벨기에,combat,,3498,106,447,,,draft
+fr,프랑스,combat,fr,3421,269,1296,,,draft
+za,남아프리카공화국,combat,,826,37,45,,,draft
+lu,룩셈부르크,combat,,100,2,15,,,draft
+se,스웨덴,medical,,1124,,,적십자 병원,,draft
+dk,덴마크,medical,,630,,,병원선,,draft
+in,인도,medical,,627,,,제60야전병원,,draft
+no,노르웨이,medical,,623,,,이동외과병원,,draft
+it,이탈리아,medical,,128,,,제68적십자병원,,draft
+de,독일,medical,,437,,,적십자 병원,정전 뒤인 1954년 5월 부산에서 문을 열어 1959년 3월까지 진료,draft

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon, ContentCard } from "@/components/EventCard";
+import ChatSheet from "@/components/ChatSheet";
+import { AskButton, CloseIcon, ContentCard } from "@/components/EventCard";
 import { LICENSE_LABEL, type PhotoMeta } from "@/lib/events";
 import { fetchStories, type Story } from "@/lib/stories";
 
@@ -9,9 +10,20 @@ type Load = { status: "loading" } | { status: "error" } | { status: "ready"; sto
 
 // 전쟁 속 이야기: 헤더의 "이야기" 버튼으로 여는 화면 전체 목록. 시기와 상관없어 스냅샷을 넘겨도 그대로다.
 // 목록에서 하나를 고르면 같은 자리에서 사건 카드와 같은 모양으로 읽는다
-export default function StoriesPanel({ onClose }: { onClose: () => void }) {
+export default function StoriesPanel({
+  canAsk,
+  onNeedLogin,
+  onClose,
+}: {
+  // 로그인하고 닉네임을 정한 회원만 AI에게 물을 수 있다
+  canAsk: boolean;
+  onNeedLogin: () => void;
+  onClose: () => void;
+}) {
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // AI 질문 시트. 다른 이야기를 열면 닫힌 채로 시작한다
+  const [chatOpenFor, setChatOpenFor] = useState<string | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -77,14 +89,17 @@ export default function StoriesPanel({ onClose }: { onClose: () => void }) {
             전쟁 속 이야기
           </h2>
         )}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="전쟁 속 이야기 닫기"
-          className="-mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted"
-        >
-          <CloseIcon />
-        </button>
+        <div className="flex items-center gap-1">
+          {selected && <AskButton onClick={() => setChatOpenFor(selected.id)} />}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="전쟁 속 이야기 닫기"
+            className="-mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted"
+          >
+            <CloseIcon />
+          </button>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
@@ -106,6 +121,15 @@ export default function StoriesPanel({ onClose }: { onClose: () => void }) {
           </ul>
         )}
       </div>
+      {selected && chatOpenFor === selected.id && (
+        <ChatSheet
+          target={{ type: "story", id: selected.id }}
+          title={selected.title}
+          canAsk={canAsk}
+          onNeedLogin={onNeedLogin}
+          onClose={() => setChatOpenFor(null)}
+        />
+      )}
     </div>
   );
 }

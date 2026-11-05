@@ -248,7 +248,13 @@ export default function WarMapApp() {
         />
       )}
 
-      {storiesOpen && <StoriesPanel onClose={() => setStoriesOpen(false)} />}
+      {storiesOpen && (
+        <StoriesPanel
+          canAsk={me.loggedIn && !me.needsNickname}
+          onNeedLogin={() => setAccountOpen(true)}
+          onClose={() => setStoriesOpen(false)}
+        />
+      )}
 
       {boardOpen && (
         <BoardPanel

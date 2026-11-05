@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import ChatSheet from "@/components/ChatSheet";
 import KindIcon from "@/components/KindIcon";
 import PeopleSheet from "@/components/PeopleSheet";
 import { KIND_LABEL } from "@/lib/event-kinds";
@@ -23,13 +24,16 @@ export default function EventCard({
   onClose,
 }: {
   event: WarEvent;
+  // 로그인하고 닉네임을 정한 회원. 인물 투표와 AI 질문에 함께 쓴다
   canVote: boolean;
   onNeedLogin: () => void;
   onClose: () => void;
 }) {
-  // 관련 인물 시트. 다른 사건을 열면 닫힌 채로 시작한다
+  // 관련 인물 시트와 AI 질문 시트. 다른 사건을 열면 닫힌 채로 시작한다
   const [peopleOpenFor, setPeopleOpenFor] = useState<string | null>(null);
   const peopleOpen = peopleOpenFor === event.id;
+  const [chatOpenFor, setChatOpenFor] = useState<string | null>(null);
+  const chatOpen = chatOpenFor === event.id;
 
   return (
     <div role="dialog" aria-modal="true" aria-label={event.title} className="absolute inset-0 z-10 flex flex-col bg-white">
@@ -42,17 +46,20 @@ export default function EventCard({
         >
           <BackIcon />
         </button>
-        {/* 인물이 없는 사건에는 버튼을 두지 않는다 */}
-        {event.people.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setPeopleOpenFor(event.id)}
-            className="flex h-11 items-center gap-1.5 rounded-full bg-fill px-4 text-sm font-bold"
-          >
-            <PeopleIcon />
-            관련 인물 {event.people.length}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <AskButton onClick={() => setChatOpenFor(event.id)} />
+          {/* 인물이 없는 사건에는 버튼을 두지 않는다 */}
+          {event.people.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setPeopleOpenFor(event.id)}
+              className="flex h-11 items-center gap-1.5 rounded-full bg-fill px-4 text-sm font-bold"
+            >
+              <PeopleIcon />
+              관련 인물 {event.people.length}
+            </button>
+          )}
+        </div>
       </div>
       {/* 다른 사건을 열면 맨 위부터 읽도록 스크롤 칸을 새로 만든다 */}
       <div key={event.id} className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))]">
@@ -76,7 +83,48 @@ export default function EventCard({
           onClose={() => setPeopleOpenFor(null)}
         />
       )}
+      {chatOpen && (
+        <ChatSheet
+          target={{ type: "event", id: event.id }}
+          title={event.title}
+          canAsk={canVote}
+          onNeedLogin={onNeedLogin}
+          onClose={() => setChatOpenFor(null)}
+        />
+      )}
     </div>
+  );
+}
+
+// 카드 머리말의 "AI 질문" 버튼. 사건 카드와 이야기 카드가 함께 쓴다
+export function AskButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="AI에게 이 카드에 대해 묻기"
+      className="flex h-11 items-center gap-1.5 rounded-full bg-fill px-4 text-sm font-bold"
+    >
+      <AskIcon />
+      AI 질문
+    </button>
+  );
+}
+
+// 말풍선 안에 물음표
+function AskIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M2.5 3.5h11v7.5H7l-3 2.5V11H2.5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="M6.6 5.9a1.4 1.4 0 1 1 2 1.3c-.4.2-.6.5-.6.9" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="8" cy="9.4" r=".7" fill="currentColor" />
+    </svg>
   );
 }
 

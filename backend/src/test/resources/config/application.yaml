@@ -7,3 +7,6 @@ GOOGLE_CLIENT_SECRET: test-google-secret
 APP_BASE_URL: http://localhost:3000
 # 테스트 전용 32바이트 키(Base64). 운영 키와 다르다
 JWT_SECRET: dGVzdC1vbmx5LWp3dC1zZWNyZXQtMzItYnl0ZXMhISE=
+# 테스트에서는 구글을 부르지 않는다. .env에 진짜 키가 있어도 비운다
+chat:
+  gemini-api-key: ""

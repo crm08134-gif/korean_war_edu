@@ -49,3 +49,12 @@ auth:
   jwt-secret: ${JWT_SECRET}
 events:
   include-drafts: false
+chat:
+  # 구글 AI 스튜디오에서 받은 Gemini API 키(.env의 GEMINI_API_KEY). 비어 있으면 AI 질문이 꺼진다(503)
+  gemini-api-key: ${GEMINI_API_KEY:}
+  # 무료 등급에서 쓸 수 있는 Flash 모델
+  model: gemini-3.8-flash
+  # 회원 한 명이 하루(한국 날짜)에 할 수 있는 질문 수
+  daily-limit: 20
+  # 모든 회원을 합친 하루 질문 수. 구글 무료 한도보다 낮게 둔다
+  global-daily-limit: 200

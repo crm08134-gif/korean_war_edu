@@ -75,7 +75,8 @@ class CountryCatalog {
             switch (row.group() == null ? "" : row.group()) {
                 case "combat" -> checkCombat(row, where);
                 case "medical" -> checkMedical(row, where);
-                default -> throw new IllegalStateException(where + "group은 combat 또는 medical이다");
+                case "material", "intent" -> checkNameOnly(row, where);
+                default -> throw new IllegalStateException(where + "group은 combat, medical, material, intent 중 하나다");
             }
         }
     }
@@ -90,6 +91,13 @@ class CountryCatalog {
         }
         if (row.unit() != null) {
             throw new IllegalStateException(where + "unit은 의료지원국에만 쓴다");
+        }
+    }
+
+    // 물자지원국(material)과 물자지원 의사표명국(intent)은 국기와 이름만 보인다. 숫자·부대 칸은 비운다
+    private static void checkNameOnly(CountryRow row, String where) {
+        if (row.personnel() != null || row.killed() != null || row.casualties() != null || row.unit() != null) {
+            throw new IllegalStateException(where + "물자지원국에는 숫자·부대 칸을 쓰지 않는다");
         }
     }
 

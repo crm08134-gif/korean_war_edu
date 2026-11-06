@@ -31,19 +31,31 @@ class CountryTests {
     }
 
     @Test
-    void 참전국_16개와_의료지원국_6개() {
+    void 참전국_16_의료지원국_6_물자지원국_37_의사표명국_3() {
         List<CountryResponse> all = catalog.list(true);
         int combat = 0;
         int medical = 0;
+        int material = 0;
+        int intent = 0;
         for (CountryResponse country : all) {
-            if ("combat".equals(country.group())) {
-                combat++;
-            } else if ("medical".equals(country.group())) {
-                medical++;
+            switch (country.group()) {
+                case "combat" -> combat++;
+                case "medical" -> medical++;
+                case "material" -> material++;
+                case "intent" -> intent++;
+                default -> throw new IllegalStateException(country.group());
             }
         }
         assertThat(combat).isEqualTo(16);
         assertThat(medical).isEqualTo(6);
+        assertThat(material).isEqualTo(37);
+        assertThat(intent).isEqualTo(3);
+    }
+
+    @Test
+    void 물자지원국에_숫자가_있으면_막는다() {
+        CountryRow wrong = new CountryRow("xx", "가짜", "material", null, 100, null, null, null, null, "draft");
+        assertThatThrownBy(() -> CountryCatalog.check(List.of(wrong))).hasMessageContaining("숫자");
     }
 
     @Test

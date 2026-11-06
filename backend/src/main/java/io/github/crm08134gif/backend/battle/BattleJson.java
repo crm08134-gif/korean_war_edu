@@ -13,8 +13,14 @@ record BattleJson(
     List<Unit> units,
     List<Keyframe> keyframes,
     // 근거 지도에 전선이 없어 스냅샷 전선이 맞지 않는 전투는 false. 빼면 true로 본다
-    Boolean showFront
+    Boolean showFront,
+    // 지도에 얹는 지명(근거 지도에 적힌 마을·산). 없으면 null
+    List<Place> places
 ) {
+
+    // 지명 하나. at은 [경도, 위도]
+    record Place(String name, List<Double> at) {
+    }
 
     // 재생할 때 지도에 맞출 범위 (경위도)
     record View(double west, double south, double east, double north) {

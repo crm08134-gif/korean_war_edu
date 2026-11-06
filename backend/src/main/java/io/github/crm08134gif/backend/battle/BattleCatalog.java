@@ -41,6 +41,9 @@ class BattleCatalog implements ApplicationRunner {
     private static final int MAX_ARROWS = 8;
     // 첫 날짜는 전투 직전의 배치를 보이려고 사건 시작일보다 이만큼까지 앞서도 된다 (다부동: CMH 지도의 8. 5. 배치)
     private static final int MAX_DAYS_BEFORE_START = 14;
+    // 지명은 부대 아이콘을 가리지 않을 만큼만, 이름은 폰에서 한 줄로 보일 만큼만
+    private static final int MAX_PLACES = 10;
+    private static final int MAX_PLACE_NAME = 12;
 
     private static final JsonMapper JSON = JsonMapper.builder()
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -88,7 +91,9 @@ class BattleCatalog implements ApplicationRunner {
             }
             // showFront를 적지 않은 파일은 전선을 보인다
             boolean showFront = battle.showFront() == null || battle.showFront();
-            result.add(new BattleResponse(battle.eventId(), battle.view(), battle.maps(), battle.units(), battle.keyframes(), showFront));
+            // 지명이 없는 파일은 빈 목록으로 보낸다 (화면에서 null을 따로 다루지 않게)
+            List<BattleJson.Place> places = battle.places() == null ? List.of() : battle.places();
+            result.add(new BattleResponse(battle.eventId(), battle.view(), battle.maps(), battle.units(), battle.keyframes(), showFront, places));
         }
         return result;
     }
@@ -187,6 +192,23 @@ class BattleCatalog implements ApplicationRunner {
                 checkPoint(entry.getValue(), v, k.date() + " " + entry.getKey());
             }
             checkArrows(k, v);
+        }
+        checkPlaces(b, v);
+    }
+
+    // 지명: 개수, 이름 길이, 좌표가 view 안
+    private static void checkPlaces(BattleJson b, BattleJson.View v) {
+        if (b.places() == null) {
+            return;
+        }
+        if (b.places().size() > MAX_PLACES) {
+            throw new IllegalStateException("지명은 " + MAX_PLACES + "개까지다");
+        }
+        for (BattleJson.Place place : b.places()) {
+            if (place.name() == null || place.name().isBlank() || place.name().length() > MAX_PLACE_NAME) {
+                throw new IllegalStateException("지명 이름은 1~" + MAX_PLACE_NAME + "자다");
+            }
+            checkPoint(place.at(), v, "지명 " + place.name());
         }
     }
 

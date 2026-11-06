@@ -122,6 +122,56 @@ function unitElement(battle: Battle, unitId: string): HTMLSpanElement {
   return element;
 }
 
+// 전투 재생의 지명 하나: 작은 점과 이름. 부대 아이콘보다 아래에 깔린다
+function placeElement(name: string): HTMLSpanElement {
+  const element = document.createElement("span");
+  element.className = "pointer-events-none flex items-center gap-1";
+  element.style.zIndex = "0";
+  const dot = document.createElement("span");
+  dot.className = "size-[7px] rounded-full border-2 border-white bg-ink";
+  const label = document.createElement("span");
+  label.className = "text-xs font-bold whitespace-nowrap text-ink";
+  // 바탕색과 상관없이 읽히게 글자 둘레에 흰 테를 두른다
+  label.style.textShadow = "0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff";
+  label.textContent = name;
+  element.append(dot, label);
+  return element;
+}
+
+// 부대 아이콘이 서로 겹치면 위아래로 밀어 떼어 놓는다 (위치는 대략적 재현이라 몇십 px 어긋나도 된다)
+const MAX_NUDGE = 60;
+
+function nudgeMarkers(map: MapLibreMap, markers: MapLibreMarker[]) {
+  const items = markers
+    .filter((m) => m.getElement().style.visibility !== "hidden")
+    .map((m) => {
+      const point = map.project(m.getLngLat());
+      const el = m.getElement();
+      return { marker: m, x: point.x, y: point.y, w: el.offsetWidth, h: el.offsetHeight, dy: 0 };
+    });
+  // 겹친 두 아이콘을 반씩 위아래로 민다. 몇 번 되풀이하면 대부분 떨어진다
+  for (let round = 0; round < 30; round++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i];
+        const b = items[j];
+        const overlapX = (a.w + b.w) / 2 - Math.abs(a.x - b.x);
+        const overlapY = (a.h + b.h) / 2 + 2 - Math.abs(a.y + a.dy - (b.y + b.dy));
+        if (overlapX <= 0 || overlapY <= 0) continue;
+        const [upper, lower] = a.y + a.dy <= b.y + b.dy ? [a, b] : [b, a];
+        upper.dy = Math.max(-MAX_NUDGE, upper.dy - overlapY / 2);
+        lower.dy = Math.min(MAX_NUDGE, lower.dy + overlapY / 2);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  for (const item of items) {
+    item.marker.setOffset([0, Math.round(item.dy)]);
+  }
+}
+
 // 재생할 때 전투 범위 둘레에 두는 여백
 const REPLAY_PADDING = { top: 24, right: 24, bottom: 24, left: 24 };
 
@@ -278,14 +328,23 @@ export default function FrontlineMap({
     const firstFit = requestAnimationFrame(() => fit(800));
     map.on("resize", refit);
     void source(map, "extra").setData(EMPTY_DATA);
+    const places: MapLibreMarker[] = [];
+    for (const place of replayBattle.places) {
+      places.push(new Marker({ element: placeElement(place.name), anchor: "left", offset: [-4, 0] }).setLngLat(place.at).addTo(map));
+    }
     const markers = unitMarkersRef.current;
     for (const unit of replayBattle.units) {
       const marker = new Marker({ element: unitElement(replayBattle, unit.id) }).setLngLat([0, 0]).addTo(map);
       markers.set(unit.id, marker);
     }
+    // 확대 범위를 다시 맞추면 화면 거리가 바뀌므로 겹침도 다시 본다
+    const renudge = () => nudgeMarkers(map, [...markers.values()]);
+    map.on("moveend", renudge);
     return () => {
       cancelAnimationFrame(firstFit);
       map.off("resize", refit);
+      map.off("moveend", renudge);
+      places.forEach((marker) => marker.remove());
       markers.forEach((marker) => marker.remove());
       markers.clear();
       void source(map, "arrows").setData(EMPTY_DATA);
@@ -317,6 +376,7 @@ export default function FrontlineMap({
       marker.getElement().style.opacity = String(u.opacity);
       marker.getElement().style.visibility = u.opacity > 0 ? "visible" : "hidden";
     }
+    nudgeMarkers(map, [...unitMarkersRef.current.values()]);
   }, [replayFrame, replayBattle, ready]);
 
   // "개전 전" 칸에 들어가거나 나올 때 한반도를 가장자리 여백에 맞춰 다시 맞춘다

@@ -29,7 +29,8 @@ class BattleCatalog implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(BattleCatalog.class);
 
-    private static final String DIR = "classpath:battles/";
+    // classpath*: 는 폴더가 없을 때(아직 전투 데이터가 없을 때) 오류 대신 빈 목록을 준다
+    private static final String DIR = "classpath*:battles/";
     private static final int MAX_UNITS = 12;
     private static final int MIN_KEYFRAMES = 2;
     private static final int MAX_KEYFRAMES = 6;

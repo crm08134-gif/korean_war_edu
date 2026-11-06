@@ -6,7 +6,7 @@
 | --- | --- |
 | id | 소문자 두 글자 나라 코드 |
 | name | 화면에 보일 이름 |
-| group | `combat`(전투병 파견) 또는 `medical`(의료지원) |
+| group | `combat`(전투병 파견), `medical`(의료지원), `material`(물자지원), `intent`(물자지원 의사표명). 뒤의 둘은 숫자·부대 칸을 비운다 |
 | flag | `frontend/public/flags/<flag>.svg`. 아직 없으면 빈칸(화면에 이름 첫 글자) |
 | personnel | 참전 연인원 |
 | killed, casualties | 전사자, 사상자(전사·부상·실종·포로 합). 참전국만 |
@@ -18,4 +18,5 @@
 
 - 참전 인원·지원 부대: [Size of War Participation](https://www.mpva.go.kr/english/contents.do?key=986) (원자료: 박동찬, 『통계로 본 6·25전쟁』, 국방부 군사편찬연구소, 2014)
 - 전사자·사상자: [Casualties](https://www.mpva.go.kr/english/contents.do?key=987)
+- 물자지원국·의사표명국 목록: [유엔군 지원현황](https://unarchives.mpva.go.kr/contents/graph) (국가보훈부 유엔참전용사 디지털 아카이브, 2026-11-06 확인)
 - 독일 병원 운영 기간: [UNC Contributors: Germany](https://www.unc.mil/Organization/Contributors/Germany)

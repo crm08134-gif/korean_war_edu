@@ -77,4 +77,9 @@ tasks.named('processResources') {
         include 'people.csv'
         into 'people'
     }
+    // 저장소 최상위 data/countries의 참전국 목록을 jar 안 countries/ 로 복사한다
+    from('../data/countries') {
+        include 'countries.csv'
+        into 'countries'
+    }
 }

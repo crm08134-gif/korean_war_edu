@@ -13,5 +13,25 @@
 | gb.svg | 영국 | [Flag of the United Kingdom (3-5).svg](https://commons.wikimedia.org/wiki/File:Flag_of_the_United_Kingdom_(3-5).svg) |
 | fr.svg | 프랑스 | [Flag of France.svg](https://commons.wikimedia.org/wiki/File:Flag_of_France.svg) |
 | au.svg | 오스트레일리아 | [Flag of Australia.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Australia.svg) |
+| ca.svg | 캐나다 (Red Ensign, 1921~1957년) | [Flag of Canada (1921–1957).svg](https://commons.wikimedia.org/wiki/File:Flag_of_Canada_(1921%E2%80%931957).svg) |
+| tr.svg | 튀르키예 | [Flag of Turkey.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Turkey.svg) |
+| gr.svg | 그리스 (1822~1978년) | [Flag of Greece (1822-1978).svg](https://commons.wikimedia.org/wiki/File:Flag_of_Greece_(1822-1978).svg) |
+| ph.svg | 필리핀 (1936~1985년) | [Flag of the Philippines (1936–1985, 1986–1998).svg](https://commons.wikimedia.org/wiki/File:Flag_of_the_Philippines_(1936%E2%80%931985,_1986%E2%80%931998).svg) |
+| th.svg | 태국 | [Flag of Thailand.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Thailand.svg) |
+| nl.svg | 네덜란드 | [Flag of the Netherlands.svg](https://commons.wikimedia.org/wiki/File:Flag_of_the_Netherlands.svg) |
+| co.svg | 콜롬비아 | [Flag of Colombia.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Colombia.svg) |
+| nz.svg | 뉴질랜드 | [Flag of New Zealand.svg](https://commons.wikimedia.org/wiki/File:Flag_of_New_Zealand.svg) |
+| et.svg | 에티오피아 (제국기, 1897~1974년) | [Flag of Ethiopia (1897–1974).svg](https://commons.wikimedia.org/wiki/File:Flag_of_Ethiopia_(1897%E2%80%931974).svg) |
+| be.svg | 벨기에 (3:2 비율) | [Flag of Belgium (civil).svg](https://commons.wikimedia.org/wiki/File:Flag_of_Belgium_(civil).svg) |
+| za.svg | 남아프리카공화국 (1928~1994년) | [Flag of South Africa (1928–1994, dark colors).svg](https://commons.wikimedia.org/wiki/File:Flag_of_South_Africa_(1928%E2%80%931994,_dark_colors).svg) |
+| lu.svg | 룩셈부르크 | [Flag of Luxembourg.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Luxembourg.svg) |
+| se.svg | 스웨덴 | [Flag of Sweden.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Sweden.svg) |
+| dk.svg | 덴마크 | [Flag of Denmark.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Denmark.svg) |
+| in.svg | 인도 | [Flag of India.svg](https://commons.wikimedia.org/wiki/File:Flag_of_India.svg) |
+| no.svg | 노르웨이 | [Flag of Norway.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Norway.svg) |
+| it.svg | 이탈리아 | [Flag of Italy.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Italy.svg) |
+| de.svg | 독일 (서독, 1949년~) | [Flag of Germany.svg](https://commons.wikimedia.org/wiki/File:Flag_of_Germany.svg) |
+
+참전국 화면(`data/countries/countries.csv`)의 국기 18개는 2026-11-06에 확인했다. ca.svg와 et.svg는 원본(115KB, 59KB)이 문장(紋章)까지 그린 큰 그림이라, 커먼즈가 만든 PNG 미리보기를 가로 108px로 줄여 SVG에 담았다(크기 조정). 나머지는 원본 그대로다.
 
 새 나라를 더하면 여기 한 줄, `frontend/src/lib/people.ts`의 `COUNTRY_LABEL`에 한 줄을 더한다.

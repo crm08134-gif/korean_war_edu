@@ -7,6 +7,7 @@ import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
 import KindIcon from "@/components/KindIcon";
 import PolicySheet from "@/components/PolicySheet";
+import CountriesPanel from "@/components/CountriesPanel";
 import StoriesPanel from "@/components/StoriesPanel";
 import Timeline from "@/components/Timeline";
 import { ANONYMOUS, fetchMe, type Me } from "@/lib/auth";
@@ -28,6 +29,8 @@ export default function WarMapApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 전쟁 속 이야기 화면. 스냅샷과 상관없어서 열고 닫아도 보던 스냅샷과 사건 카드는 그대로다
   const [storiesOpen, setStoriesOpen] = useState(false);
+  // 참전국 화면. 이야기 화면처럼 스냅샷과 상관없다
+  const [countriesOpen, setCountriesOpen] = useState(false);
   // 하단 패널의 "게시판" 탭. 화면 전체로 열리고, 닫으면 보던 스냅샷으로 돌아온다
   const [boardOpen, setBoardOpen] = useState(false);
   // 운영 정책·이용약관·개인정보 처리방침. 게시판과 로그인 시트 위에 뜬다
@@ -131,7 +134,7 @@ export default function WarMapApp() {
   // 키보드 ←/→로도 넘긴다 (PC에서 볼 때). Esc는 사건 카드를 닫는다.
   // 이야기 화면이 열려 있으면 키는 그 화면이 받는다
   useEffect(() => {
-    if (storiesOpen || accountOpen || boardOpen) return;
+    if (storiesOpen || countriesOpen || accountOpen || boardOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Escape") {
         setSelectedId(null);
@@ -141,7 +144,7 @@ export default function WarMapApp() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last, storiesOpen, accountOpen, boardOpen]);
+  }, [last, storiesOpen, countriesOpen, accountOpen, boardOpen]);
 
   return (
     <main className="relative mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
@@ -165,7 +168,14 @@ export default function WarMapApp() {
             >
               <PersonIcon filled={me.loggedIn} />
             </button>
-            {/* 시기와 상관없는 글이라 스냅샷과 상관없이 늘 같은 자리에 둔다 */}
+            {/* 참전국·이야기는 시기와 상관없어서 스냅샷과 상관없이 늘 같은 자리에 둔다 */}
+            <button
+              type="button"
+              onClick={() => setCountriesOpen(true)}
+              className="inline-flex h-11 shrink-0 items-center rounded-full bg-fill px-3.5 text-sm font-bold"
+            >
+              참전국
+            </button>
             <button
               type="button"
               onClick={() => setStoriesOpen(true)}
@@ -247,6 +257,8 @@ export default function WarMapApp() {
           onClose={() => setSelectedId(null)}
         />
       )}
+
+      {countriesOpen && <CountriesPanel onClose={() => setCountriesOpen(false)} />}
 
       {storiesOpen && (
         <StoriesPanel

@@ -12,7 +12,7 @@ export type BattleUnit = {
 };
 
 export type BattleKeyframe = {
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD, 하루짜리 전투는 YYYY-MM-DDTHH:MM
   caption: string;
   front: Position[] | null; // 전투 지역의 전선 조각(서→동). 없으면 그날 스냅샷 전선 그대로
   positions: Record<string, Position>; // 그날 있는 부대만
@@ -214,8 +214,17 @@ export function frameAt(battle: Battle, fronts: Position[][], t: number): Replay
   return { front, units, arrows, nearest: Math.round(clamped) };
 }
 
-// 1950-08-13 → 1950. 8. 13.
+// 1950-08-13 → 1950. 8. 13. / 1950-07-05T08:00 → 1950. 7. 5. 08:00
 export function formatKeyDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return `${y}. ${m}. ${d}.`;
+  const [day, time] = iso.split("T");
+  const [y, m, d] = day.split("-").map(Number);
+  return time ? `${y}. ${m}. ${d}. ${time}` : `${y}. ${m}. ${d}.`;
+}
+
+// 키프레임 버튼에 쓰는 짧은 이름: 날짜만 있으면 "8. 13.", 모두 같은 날이면 시각 "08:00"
+export function shortKeyLabel(iso: string, sameDay: boolean): string {
+  const [day, time] = iso.split("T");
+  if (sameDay && time) return time;
+  const [, m, d] = day.split("-").map(Number);
+  return `${m}. ${d}.`;
 }

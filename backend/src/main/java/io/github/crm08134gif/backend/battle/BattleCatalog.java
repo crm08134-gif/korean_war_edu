@@ -3,6 +3,8 @@ package io.github.crm08134gif.backend.battle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +39,8 @@ class BattleCatalog implements ApplicationRunner {
     private static final int MAX_CAPTION = 80;
     // 폰 화면에서 한 날짜에 화살표가 이보다 많으면 알아보기 어렵다
     private static final int MAX_ARROWS = 8;
+    // 첫 날짜는 전투 직전의 배치를 보이려고 사건 시작일보다 이만큼까지 앞서도 된다 (다부동: CMH 지도의 8. 5. 배치)
+    private static final int MAX_DAYS_BEFORE_START = 14;
 
     private static final JsonMapper JSON = JsonMapper.builder()
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -153,9 +157,9 @@ class BattleCatalog implements ApplicationRunner {
         if (first.arrows() != null && !first.arrows().isEmpty()) {
             throw new IllegalStateException(first.date() + ": 첫 날짜에는 화살표를 달지 않는다 (앞 날짜부터의 움직임이라서)");
         }
-        LocalDate previous = null;
+        LocalDateTime previous = null;
         for (BattleJson.Keyframe k : b.keyframes()) {
-            LocalDate date = LocalDate.parse(k.date());
+            LocalDateTime date = parseKeyDate(k.date());
             if (previous != null && !date.isAfter(previous)) {
                 throw new IllegalStateException(k.date() + ": 키프레임 날짜는 앞 날짜보다 뒤여야 한다");
             }
@@ -205,6 +209,24 @@ class BattleCatalog implements ApplicationRunner {
         }
     }
 
+    // 키프레임 날짜: "1950-08-13" 또는 하루짜리 전투처럼 시각까지 "1950-07-05T08:00". 시각이 없으면 그날 0시로 본다
+    static LocalDateTime parseKeyDate(String text) {
+        if (text == null) {
+            throw new IllegalStateException("키프레임에 date가 없다");
+        }
+        try {
+            if (text.length() == 10) {
+                return LocalDate.parse(text).atStartOfDay();
+            }
+            if (text.length() == 16) {
+                return LocalDateTime.parse(text);
+            }
+        } catch (DateTimeParseException e) {
+            // 아래에서 같은 문장으로 알린다
+        }
+        throw new IllegalStateException(text + ": date는 YYYY-MM-DD 또는 YYYY-MM-DDTHH:MM이다");
+    }
+
     // [경도, 위도] 두 수이고 view 안이어야 한다
     private static void checkPoint(List<Double> point, BattleJson.View v, String where) {
         if (point == null || point.size() != 2 || point.get(0) == null || point.get(1) == null) {
@@ -225,9 +247,13 @@ class BattleCatalog implements ApplicationRunner {
         if (!"battle".equals(event.kind())) {
             throw new IllegalStateException("전투(kind=battle) 사건에만 재생을 단다");
         }
-        for (BattleJson.Keyframe k : b.keyframes()) {
-            LocalDate date = LocalDate.parse(k.date());
-            if (date.isBefore(event.startDate()) || date.isAfter(event.endDate())) {
+        LocalDate earliest = event.startDate().minusDays(MAX_DAYS_BEFORE_START);
+        for (int i = 0; i < b.keyframes().size(); i++) {
+            BattleJson.Keyframe k = b.keyframes().get(i);
+            LocalDate date = parseKeyDate(k.date()).toLocalDate();
+            // 첫 날짜만 시작일보다 앞설 수 있다 (전투 직전 배치)
+            LocalDate from = i == 0 ? earliest : event.startDate();
+            if (date.isBefore(from) || date.isAfter(event.endDate())) {
                 throw new IllegalStateException(k.date() + ": 사건 기간(" + event.startDate() + "~" + event.endDate() + ") 밖이다");
             }
         }

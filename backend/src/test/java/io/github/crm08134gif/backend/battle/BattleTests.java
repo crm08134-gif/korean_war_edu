@@ -119,6 +119,32 @@ class BattleTests {
     }
 
     @Test
+    void 첫_날짜만_사건_시작보다_앞설_수_있다() {
+        Map<String, List<Double>> at = Map.of("rok-1", List.of(128.5, 36.1));
+        List<BattleJson.Keyframe> before = List.of(day("1950-08-05", at), day("1950-08-24", at));
+        BattleCatalog.checkEvent(valid(UNITS, before), DABUDONG);
+
+        List<BattleJson.Keyframe> tooEarly = List.of(day("1950-07-20", at), day("1950-08-24", at));
+        assertThatThrownBy(() -> BattleCatalog.checkEvent(valid(UNITS, tooEarly), DABUDONG)).hasMessageContaining("사건 기간");
+
+        List<BattleJson.Keyframe> secondBefore = List.of(day("1950-08-05", at), day("1950-08-10", at));
+        assertThatThrownBy(() -> BattleCatalog.checkEvent(valid(UNITS, secondBefore), DABUDONG)).hasMessageContaining("사건 기간");
+    }
+
+    @Test
+    void 하루짜리_전투는_시각으로_나눈다() {
+        Map<String, List<Double>> at = Map.of("rok-1", List.of(128.5, 36.1));
+        List<BattleJson.Keyframe> hours = List.of(day("1950-08-13T07:45", at), day("1950-08-13T14:30", at));
+        BattleCatalog.check(valid(UNITS, hours), "dabudong.json");
+
+        List<BattleJson.Keyframe> backwards = List.of(day("1950-08-13T14:30", at), day("1950-08-13T07:45", at));
+        assertThatThrownBy(() -> BattleCatalog.check(valid(UNITS, backwards), "dabudong.json")).hasMessageContaining("앞 날짜보다");
+
+        List<BattleJson.Keyframe> bad = List.of(day("1950-08-13 07:45", at), day("1950-08-14", at));
+        assertThatThrownBy(() -> BattleCatalog.check(valid(UNITS, bad), "dabudong.json")).hasMessageContaining("YYYY-MM-DD");
+    }
+
+    @Test
     void 전투가_아닌_사건에는_달지_않는다() {
         BattleCatalog.EventInfo capture =
                 new BattleCatalog.EventInfo("capture", LocalDate.parse("1950-08-13"), LocalDate.parse("1950-08-30"));

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatKeyDate, type Battle } from "@/lib/battles";
+import { formatKeyDate, shortKeyLabel, type Battle } from "@/lib/battles";
 
 // 전투 재생 중 아래 패널 자리에 뜨는 시트 (docs/battle-replay.md 1장, 데모에서 확정한 모양):
 // 날짜와 "N / 전체", 그 날짜의 설명, 키프레임 버튼, 재생·일시 정지, 위치 막대, 근거 지도
@@ -24,6 +24,11 @@ export default function BattleReplay({
   const keyframes = battle.keyframes;
   const current = keyframes[nearest];
   const steps = (keyframes.length - 1) * 100;
+  // 키프레임이 모두 같은 날이면(하루짜리 전투) 버튼에 시각만 적는다
+  let sameDay = true;
+  for (const k of keyframes) {
+    if (k.date.slice(0, 10) !== keyframes[0].date.slice(0, 10)) sameDay = false;
+  }
 
   return (
     <section
@@ -57,7 +62,7 @@ export default function BattleReplay({
               i === nearest ? "bg-ink text-white" : "bg-fill text-ink"
             }`}
           >
-            {formatKeyDate(k.date).slice(6)}
+            {shortKeyLabel(k.date, sameDay)}
           </button>
         ))}
       </div>

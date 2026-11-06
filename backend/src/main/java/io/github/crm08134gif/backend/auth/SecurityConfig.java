@@ -60,7 +60,7 @@ class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 로그인 없이 읽는 공개 자료
                         .requestMatchers(HttpMethod.GET,
-                                "/api/snapshots", "/api/events", "/api/stories", "/api/countries", "/api/votes", "/api/me").permitAll()
+                                "/api/snapshots", "/api/events", "/api/stories", "/api/countries", "/api/battles", "/api/votes", "/api/me").permitAll()
                         // 게시판 읽기는 공개. GET만 연다 (같은 주소의 POST·PATCH·DELETE는 아래 authenticated에 걸린다)
                         // CookieBearerTokenResolver의 건너뛰기 목록에는 넣지 않는다: "내 글", "내 공감", 가려진 내 글 내용에 로그인 정보가 필요하다
                         // "/*"는 경로 한 칸만. /api/posts/5는 열리고 /api/posts/5/comments는 안 열린다

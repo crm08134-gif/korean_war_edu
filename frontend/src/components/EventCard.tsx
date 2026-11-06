@@ -22,12 +22,15 @@ export default function EventCard({
   canVote,
   onNeedLogin,
   onClose,
+  onReplay,
 }: {
   event: WarEvent;
   // 로그인하고 닉네임을 정한 회원. 인물 투표와 AI 질문에 함께 쓴다
   canVote: boolean;
   onNeedLogin: () => void;
   onClose: () => void;
+  // 전투 재생 데이터가 있는 전투 사건에만 온다. 있으면 제목 아래 "애니메이션 보기" 버튼을 둔다
+  onReplay?: () => void;
 }) {
   // 관련 인물 시트와 AI 질문 시트. 다른 사건을 열면 닫힌 채로 시작한다
   const [peopleOpenFor, setPeopleOpenFor] = useState<string | null>(null);
@@ -71,6 +74,7 @@ export default function EventCard({
               {KIND_LABEL[event.kind]} · {formatEventDate(event)} · {event.placeName}
             </>
           }
+          action={onReplay && <ReplayButton onClick={onReplay} />}
         />
       </div>
       {peopleOpen && (
@@ -93,6 +97,22 @@ export default function EventCard({
         />
       )}
     </div>
+  );
+}
+
+// 전투 사건 카드의 "애니메이션 보기" 버튼 (docs/battle-replay.md 1장)
+function ReplayButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-[52px] items-center justify-center gap-2.5 rounded-2xl bg-ink text-base font-extrabold text-white"
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+        <path d="M5 3.5v11l9-5.5z" fill="currentColor" />
+      </svg>
+      애니메이션 보기
+    </button>
   );
 }
 
@@ -130,7 +150,15 @@ function AskIcon() {
 
 // 사건 카드와 전쟁 속 이야기 카드가 함께 쓰는 몸통: 제목, 대표 사진, 요약, 본문, 출처 목록.
 // 닫기 버튼은 감싸는 화면(EventCard, StoriesPanel)의 머리말에 있다
-export function ContentCard({ content, meta }: { content: WarEvent | Story; meta: React.ReactNode }) {
+export function ContentCard({
+  content,
+  meta,
+  action,
+}: {
+  content: WarEvent | Story;
+  meta: React.ReactNode;
+  action?: React.ReactNode; // 제목 바로 아래 큰 버튼 (전투 재생)
+}) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   // 사건 카드와 이야기 카드가 한 화면에 함께 있을 수 있어 제목 id를 겹치지 않게 만든다
   const headingId = useId();
@@ -156,6 +184,7 @@ export function ContentCard({ content, meta }: { content: WarEvent | Story; meta
           {content.title}
         </h2>
       </div>
+      {action}
 
       {content.photoFile && content.photoCaption && (
         <Photo file={content.photoFile} caption={content.photoCaption} meta={photoMeta.get(content.photoFile)} />

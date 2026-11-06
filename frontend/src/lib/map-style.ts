@@ -14,6 +14,8 @@ export const COLORS = {
   // 전투 재생의 공격·이동 화살표 (진영색보다 진하게, docs/battle-replay.md 1장)
   arrowUn: "#2f5f9e",
   arrowCommunist: "#a8403a",
+  // 전선을 감춘 전투 재생에서 한반도 땅 색 (바다·주변 나라와 구분되는 옅은 회색)
+  landNeutral: "#d9dde2",
 } as const;
 
 // data/reference/korea_outline.geojson의 범위. 처음 화면을 한반도 전체에 맞춘다
@@ -40,6 +42,8 @@ export const SAFE_BOUNDS = {
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 const sideColor: ExpressionSpecification = ["match", ["get", "side"], "north", COLORS.north, COLORS.south];
+// 전투 재생에서 감췄던 양측 색을 되돌릴 때 쓴다
+export const SIDE_COLOR = sideColor;
 const arrowColor: ExpressionSpecification = ["match", ["get", "side"], "un", COLORS.arrowUn, COLORS.arrowCommunist];
 
 // 아래에서 위로 쌓는다: 바다 → 양측 색 → 추가 영역 → 바다 덮개 → 주변 나라 → 해안선 → 전선

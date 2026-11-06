@@ -9,6 +9,7 @@ import type { Region, WarEvent } from "@/lib/events";
 import { easeInOutCubic, interpolateLine } from "@/lib/geometry";
 import {
   COLORS,
+  SIDE_COLOR,
   EMPTY_DATA,
   KOREA_BOUNDS,
   MAP_STYLE,
@@ -161,6 +162,7 @@ export default function FrontlineMap({
   // 지도는 한 번만 만든다. maplibre-gl은 브라우저에서만 돌아가므로 여기서 불러온다
   useEffect(() => {
     let map: MapLibreMap | null = null;
+    let observer: ResizeObserver | null = null;
     let cancelled = false;
     import("maplibre-gl").then(({ Map, Marker, setWorkerUrl }) => {
       if (cancelled || !containerRef.current) {
@@ -188,6 +190,9 @@ export default function FrontlineMap({
       applyViewLimit(map);
       // 창 크기나 폰 방향이 바뀌면 지도 칸 크기도 바뀐다
       map.on("resize", () => applyViewLimit(map!));
+      // 아래 패널이 재생 시트로 바뀌는 것처럼 창은 그대로인데 지도 칸만 바뀔 때도 지도 크기를 다시 잰다
+      observer = new ResizeObserver(() => map?.resize());
+      observer.observe(containerRef.current);
       map.on("load", () => {
         mapRef.current = map;
         setReady(true);
@@ -195,6 +200,7 @@ export default function FrontlineMap({
     });
     return () => {
       cancelled = true;
+      observer?.disconnect();
       map?.remove();
       mapRef.current = null;
     };
@@ -250,13 +256,27 @@ export default function FrontlineMap({
       return;
     }
     const { west, south, east, north } = replayBattle.view;
-    map.fitBounds(
-      [
-        [west, south],
-        [east, north],
-      ],
-      { padding: REPLAY_PADDING, duration: 800 },
-    );
+    // 작은 전투(죽미령·지평리)는 한반도 화면보다 훨씬 크게 확대해야 보인다
+    map.setMaxZoom(13);
+    // 근거 지도에 전선이 없는 전투는 스냅샷 전선과 양측 색을 감춘다 (다른 날의 전선이 섞이지 않게)
+    if (!replayBattle.showFront) {
+      map.setPaintProperty("sides", "fill-color", COLORS.landNeutral);
+      map.setPaintProperty("extra", "fill-color", COLORS.landNeutral);
+      map.setLayoutProperty("front-line", "visibility", "none");
+      map.setLayoutProperty("front-ends", "visibility", "none");
+    }
+    // 재생 시트가 아래 패널 자리를 바꾸면 지도 칸 높이도 바뀐다. 바뀔 때마다 전투 범위에 다시 맞춘다
+    const fit = (duration: number) =>
+      map.fitBounds(
+        [
+          [west, south],
+          [east, north],
+        ],
+        { padding: REPLAY_PADDING, duration },
+      );
+    const refit = () => fit(0);
+    const firstFit = requestAnimationFrame(() => fit(800));
+    map.on("resize", refit);
     void source(map, "extra").setData(EMPTY_DATA);
     const markers = unitMarkersRef.current;
     for (const unit of replayBattle.units) {
@@ -264,9 +284,16 @@ export default function FrontlineMap({
       markers.set(unit.id, marker);
     }
     return () => {
+      cancelAnimationFrame(firstFit);
+      map.off("resize", refit);
       markers.forEach((marker) => marker.remove());
       markers.clear();
       void source(map, "arrows").setData(EMPTY_DATA);
+      map.setPaintProperty("sides", "fill-color", SIDE_COLOR);
+      map.setPaintProperty("extra", "fill-color", SIDE_COLOR);
+      map.setLayoutProperty("front-line", "visibility", "visible");
+      map.setLayoutProperty("front-ends", "visibility", "visible");
+      map.setMaxZoom(9);
       map.fitBounds(KOREA_BOUNDS, { padding: edgeRef.current ? EDGE_PADDING : PADDING, duration: 800 });
     };
   }, [replayBattle, ready]);

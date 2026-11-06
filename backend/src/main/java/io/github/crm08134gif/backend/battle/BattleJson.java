@@ -11,7 +11,9 @@ record BattleJson(
     View view,
     List<MapRef> maps,
     List<Unit> units,
-    List<Keyframe> keyframes
+    List<Keyframe> keyframes,
+    // 근거 지도에 전선이 없어 스냅샷 전선이 맞지 않는 전투는 false. 빼면 true로 본다
+    Boolean showFront
 ) {
 
     // 재생할 때 지도에 맞출 범위 (경위도)

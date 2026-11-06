@@ -279,9 +279,17 @@ export default function WarMapApp() {
         {load.status === "ready" && snapshots.length === 0 && <Notice>아직 스냅샷이 없습니다.</Notice>}
         {current && (
           <div className="pointer-events-none absolute bottom-3 left-4 flex flex-wrap gap-1.5">
-            <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.north }} />}>북측</Legend>
-            <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.south }} />}>남측</Legend>
-            <Legend swatch={<span className="h-0.5 w-3.5" style={{ background: COLORS.frontLine }} />}>전선</Legend>
+            {replayBattle && !replayBattle.showFront ? (
+              <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.landNeutral }} />}>
+                전선 표시 없음
+              </Legend>
+            ) : (
+              <>
+                <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.north }} />}>북측</Legend>
+                <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.south }} />}>남측</Legend>
+                <Legend swatch={<span className="h-0.5 w-3.5" style={{ background: COLORS.frontLine }} />}>전선</Legend>
+              </>
+            )}
             {replayBattle && (
               <Legend
                 swatch={

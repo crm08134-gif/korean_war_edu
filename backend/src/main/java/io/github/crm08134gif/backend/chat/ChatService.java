@@ -97,7 +97,14 @@ class ChatService {
         } catch (RestClientException e) {
             // 연결이 안 됐거나 30초 안에 답이 없었다
             repository.refund(memberId);
-            log.warn("Gemini 연결 실패 {}", e.getClass().getSimpleName());
+            // 원인을 알 수 있게 가장 안쪽 예외의 종류와 문장(앞 300자)을 남긴다.
+            // 키는 머리글로 보내므로 이 문장에 들어가지 않는다
+            Throwable cause = e.getMostSpecificCause();
+            String detail = cause.getMessage() == null ? "" : cause.getMessage();
+            if (detail.length() > 300) {
+                detail = detail.substring(0, 300);
+            }
+            log.warn("Gemini 연결 실패 {} / {}: {}", e.getClass().getSimpleName(), cause.getClass().getSimpleName(), detail);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI 답변을 받지 못했습니다. 잠시 뒤 다시 해 주세요");
         }
         if (answer == null) {

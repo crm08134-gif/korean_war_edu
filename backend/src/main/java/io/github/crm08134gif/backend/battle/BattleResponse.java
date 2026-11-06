@@ -8,6 +8,7 @@ record BattleResponse(
     BattleJson.View view,
     List<BattleJson.MapRef> maps,
     List<BattleJson.Unit> units,
-    List<BattleJson.Keyframe> keyframes
+    List<BattleJson.Keyframe> keyframes,
+    boolean showFront
 ) {
 }

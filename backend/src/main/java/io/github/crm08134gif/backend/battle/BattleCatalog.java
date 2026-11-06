@@ -86,7 +86,9 @@ class BattleCatalog implements ApplicationRunner {
             if (!includeDrafts && !"reviewed".equals(battle.status())) {
                 continue;
             }
-            result.add(new BattleResponse(battle.eventId(), battle.view(), battle.maps(), battle.units(), battle.keyframes()));
+            // showFront를 적지 않은 파일은 전선을 보인다
+            boolean showFront = battle.showFront() == null || battle.showFront();
+            result.add(new BattleResponse(battle.eventId(), battle.view(), battle.maps(), battle.units(), battle.keyframes(), showFront));
         }
         return result;
     }

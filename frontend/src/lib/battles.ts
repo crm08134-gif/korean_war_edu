@@ -30,6 +30,7 @@ export type Battle = {
   maps: { title: string; note: string | null }[];
   units: BattleUnit[];
   keyframes: BattleKeyframe[];
+  showFront: boolean; // false면 재생 중 전선과 양측 색을 감춘다 (근거 지도에 전선이 없는 전투)
 };
 
 export async function fetchBattles(signal?: AbortSignal): Promise<Battle[]> {

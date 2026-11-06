@@ -30,7 +30,7 @@ class BattleTests {
         return new BattleJson("dabudong", "draft",
                 new BattleJson.View(128.0, 35.7, 129.0, 36.6),
                 List.of(new BattleJson.MapRef("CMH Pub 20-2, Map 0", null)),
-                units, keyframes);
+                units, keyframes, null);
     }
 
     static final List<BattleJson.Unit> UNITS = List.of(

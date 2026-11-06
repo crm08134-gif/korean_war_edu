@@ -11,6 +11,9 @@ export const COLORS = {
   north: "#db8580",
   south: "#7da3ce",
   frontLine: "#1a1d21",
+  // 전투 재생에서 부대가 지나온 길 (진영색보다 진하게, docs/battle-replay.md 1장)
+  trailUn: "#2f5f9e",
+  trailCommunist: "#a8403a",
 } as const;
 
 // data/reference/korea_outline.geojson의 범위. 처음 화면을 한반도 전체에 맞춘다
@@ -45,6 +48,8 @@ export const MAP_STYLE: StyleSpecification = {
     // 양측 다각형과 전선을 한 소스에 둔다. 이동하는 동안 둘이 같은 순간의 모양으로 그려진다
     war: { type: "geojson", data: EMPTY },
     extra: { type: "geojson", data: EMPTY },
+    // 전투 재생 중에만 채운다
+    trails: { type: "geojson", data: EMPTY },
     seaMask: { type: "geojson", data: "/geo/sea_mask.geojson" },
     neighbors: { type: "geojson", data: "/geo/neighbors.geojson" },
   },
@@ -76,8 +81,34 @@ export const MAP_STYLE: StyleSpecification = {
       filter: ["==", ["geometry-type"], "Point"],
       paint: { "circle-color": COLORS.frontLine, "circle-radius": 3 },
     },
+    {
+      id: "trails",
+      type: "line",
+      source: "trails",
+      layout: { "line-cap": "round" },
+      paint: {
+        "line-color": ["match", ["get", "side"], "un", COLORS.trailUn, COLORS.trailCommunist],
+        "line-width": 2.5,
+        "line-dasharray": [2, 1.6],
+        "line-opacity": ["get", "opacity"],
+      },
+    },
   ],
 };
+
+// 전투 재생: 부대마다 처음 나타난 곳에서 지금 자리까지의 점선
+export function trailData(units: { unit: { side: string }; opacity: number; trail: Position[] }[]): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: units
+      .filter((u) => u.trail.length === 2)
+      .map((u) => ({
+        type: "Feature" as const,
+        properties: { side: u.unit.side, opacity: u.opacity },
+        geometry: { type: "LineString" as const, coordinates: u.trail },
+      })),
+  };
+}
 
 // 전선 하나로 양측 다각형, 전선, 양 끝점을 만든다
 export function warData(line: Position[]): FeatureCollection {

@@ -4,15 +4,18 @@ import type { GeoJSONSource, Map as MapLibreMap, Marker as MapLibreMarker } from
 import { useEffect, useRef, useState } from "react";
 import KindIcon from "@/components/KindIcon";
 import { KIND_LABEL, kindIconSvg } from "@/lib/event-kinds";
+import type { Battle, ReplayFrame } from "@/lib/battles";
 import type { Region, WarEvent } from "@/lib/events";
 import { easeInOutCubic, interpolateLine } from "@/lib/geometry";
 import {
+  COLORS,
   EMPTY_DATA,
   KOREA_BOUNDS,
   MAP_STYLE,
   SAFE_BOUNDS,
   VIEW_LIMIT_BOUNDS,
   extraData,
+  trailData,
   warData,
 } from "@/lib/map-style";
 import type { Position, Snapshot } from "@/lib/snapshots";
@@ -99,18 +102,43 @@ function markerElement(event: WarEvent, selected: boolean, onSelect: (id: string
   return element;
 }
 
+// 전투 재생의 부대 하나: 흰 알약 안에 국기(진영색 테두리)와 부대 이름 (docs/battle-replay.md 1장).
+// 누르는 것이 아니라 보는 것이라 버튼이 아닌 span이다. 지도 글꼴 없이 한글을 쓰려고 HTML로 그린다
+function unitElement(battle: Battle, unitId: string): HTMLSpanElement {
+  const unit = battle.units.find((u) => u.id === unitId)!;
+  const element = document.createElement("span");
+  element.className =
+    "pointer-events-none flex items-center gap-[5px] rounded-full border-[1.5px] border-ink bg-white py-[3px] pr-[7px] pl-[5px] shadow-[0_1px_4px_rgba(26,29,33,0.18)]";
+  const flag = document.createElement("img");
+  flag.src = `/flags/${unit.country}.svg`;
+  flag.alt = "";
+  flag.className = "h-[14px] w-5 rounded-[3px] object-cover";
+  flag.style.boxShadow = `0 0 0 2px ${unit.side === "un" ? COLORS.south : COLORS.north}`;
+  const name = document.createElement("span");
+  name.className = "text-[11px] font-bold whitespace-nowrap text-ink";
+  name.textContent = unit.name;
+  element.append(flag, name);
+  return element;
+}
+
+// 재생할 때 전투 범위 둘레에 두는 여백
+const REPLAY_PADDING = { top: 24, right: 24, bottom: 24, left: 24 };
+
 export default function FrontlineMap({
   snapshot,
   events,
   selectedId,
   onSelectEvent,
   edgeLayout,
+  replay,
 }: {
   snapshot: Snapshot;
   events: WarEvent[];
   selectedId: string | null;
   onSelectEvent: (id: string) => void;
   edgeLayout: boolean; // "개전 전" 칸: 가장자리 마커 자리를 비우고 한반도를 안쪽으로 줄인다
+  // 전투 재생 중이면 스냅샷 대신 이 전선과 부대를 그리고 전투 범위로 확대한다
+  replay: { battle: Battle; frame: ReplayFrame } | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -120,6 +148,10 @@ export default function FrontlineMap({
   const [ready, setReady] = useState(false);
   // 지도를 만들 때의 여백을 고르는 데 쓴다 (지도 만드는 effect는 한 번만 돈다)
   const edgeRef = useRef(edgeLayout);
+  // 재생 중인 부대 마커. 프레임마다 새로 만들지 않고 자리와 투명도만 바꾼다
+  const unitMarkersRef = useRef<Map<string, MapLibreMarker>>(new Map());
+  const replayBattle = replay?.battle ?? null;
+  const replayFrame = replay?.frame ?? null;
 
   // 마커는 만들 때의 함수를 붙잡고 있으므로, 늘 최신 함수를 부르도록 ref에 둔다
   useEffect(() => {
@@ -168,10 +200,12 @@ export default function FrontlineMap({
     };
   }, []);
 
-  // 스냅샷이 바뀌면 지금 보이는 전선에서 새 전선으로 옮긴다
+  // 스냅샷이 바뀌면 지금 보이는 전선에서 새 전선으로 옮긴다.
+  // 재생 중에는 손대지 않고, 재생이 끝나면 재생의 마지막 전선에서 스냅샷 전선으로 돌아간다
+  const replaying = replayBattle !== null;
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map) {
+    if (!ready || !map || replaying) {
       return;
     }
     const target = snapshot.frontLine.coordinates;
@@ -206,7 +240,54 @@ export default function FrontlineMap({
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [snapshot, ready]);
+  }, [snapshot, ready, replaying]);
+
+  // 재생을 시작하면 전투 범위로 확대하고 부대 마커를 만든다. 끝나면 지우고 한반도 전체로 돌아간다
+  useEffect(() => {
+    const map = mapRef.current;
+    const Marker = markerClassRef.current;
+    if (!ready || !map || !Marker || !replayBattle) {
+      return;
+    }
+    const { west, south, east, north } = replayBattle.view;
+    map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      { padding: REPLAY_PADDING, duration: 800 },
+    );
+    void source(map, "extra").setData(EMPTY_DATA);
+    const markers = unitMarkersRef.current;
+    for (const unit of replayBattle.units) {
+      const marker = new Marker({ element: unitElement(replayBattle, unit.id) }).setLngLat([0, 0]).addTo(map);
+      markers.set(unit.id, marker);
+    }
+    return () => {
+      markers.forEach((marker) => marker.remove());
+      markers.clear();
+      void source(map, "trails").setData(EMPTY_DATA);
+      map.fitBounds(KOREA_BOUNDS, { padding: edgeRef.current ? EDGE_PADDING : PADDING, duration: 800 });
+    };
+  }, [replayBattle, ready]);
+
+  // 재생의 한 장면: 그 시각의 전선, 지나온 길, 부대 자리
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !replayFrame) {
+      return;
+    }
+    drawLine(map, replayFrame.front);
+    shownLineRef.current = replayFrame.front;
+    void source(map, "trails").setData(trailData(replayFrame.units));
+    for (const u of replayFrame.units) {
+      const marker = unitMarkersRef.current.get(u.unit.id);
+      if (!marker) continue;
+      marker.setLngLat(u.at);
+      marker.getElement().style.opacity = String(u.opacity);
+      marker.getElement().style.visibility = u.opacity > 0 ? "visible" : "hidden";
+    }
+  }, [replayFrame, ready]);
 
   // "개전 전" 칸에 들어가거나 나올 때 한반도를 가장자리 여백에 맞춰 다시 맞춘다
   useEffect(() => {

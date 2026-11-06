@@ -78,6 +78,11 @@ tasks.named('processResources') {
         into 'people'
     }
     // 저장소 최상위 data/countries의 참전국 목록을 jar 안 countries/ 로 복사한다
+    // 전투 재생 데이터(docs/battle-replay.md)를 jar 안 battles/ 로 복사한다
+    from('../data/battles') {
+        include '*.json'
+        into 'battles'
+    }
     from('../data/countries') {
         include 'countries.csv'
         into 'countries'

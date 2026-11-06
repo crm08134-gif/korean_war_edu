@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AccountSheet from "@/components/AccountSheet";
+import BattleReplay from "@/components/BattleReplay";
 import BoardPanel from "@/components/BoardPanel";
 import EventCard from "@/components/EventCard";
 import FrontlineMap from "@/components/FrontlineMap";
@@ -11,6 +12,7 @@ import CountriesPanel from "@/components/CountriesPanel";
 import StoriesPanel from "@/components/StoriesPanel";
 import Timeline from "@/components/Timeline";
 import { ANONYMOUS, fetchMe, type Me } from "@/lib/auth";
+import { fetchBattles, frameAt, prepareFronts, SEGMENT_MS, type Battle } from "@/lib/battles";
 import { KIND_LABEL } from "@/lib/event-kinds";
 import { eventsBetween, fetchEvents, formatEventDate, formatStartDate, prewarEvents, type WarEvent } from "@/lib/events";
 import { COLORS } from "@/lib/map-style";
@@ -39,6 +41,9 @@ export default function WarMapApp() {
   const [me, setMe] = useState<Me>(ANONYMOUS);
   const [accountOpen, setAccountOpen] = useState(false);
   const [loginFailed, setLoginFailed] = useState(false);
+  // 전투 재생 (docs/battle-replay.md). 재생 데이터가 있는 전투 사건 카드에만 버튼이 생긴다
+  const [battles, setBattles] = useState<Battle[]>([]);
+  const [replay, setReplay] = useState<{ eventId: string; t: number; playing: boolean } | null>(null);
 
   const loadMe = useCallback((signal?: AbortSignal) => {
     return fetchMe(signal)
@@ -91,7 +96,62 @@ export default function WarMapApp() {
     return () => controller.abort();
   }, []);
 
+  // 전투 재생 데이터도 따로 불러온다. 못 불러오면 "애니메이션 보기" 버튼이 없을 뿐이다
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchBattles(controller.signal)
+      .then(setBattles)
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) console.error(error);
+      });
+    return () => controller.abort();
+  }, []);
+
   const snapshots = load.status === "ready" ? load.snapshots : NO_SNAPSHOTS;
+
+  // 재생 중인 전투와, 키프레임마다 미리 만든 앱 전체 전선
+  const replayBattle = replay ? (battles.find((b) => b.eventId === replay.eventId) ?? null) : null;
+  const replayFronts = useMemo(
+    () => (replayBattle && snapshots.length > 0 ? prepareFronts(replayBattle, snapshots) : null),
+    [replayBattle, snapshots],
+  );
+  const replayFrame = useMemo(
+    () => (replayBattle && replayFronts && replay ? frameAt(replayBattle, replayFronts, replay.t) : null),
+    [replayBattle, replayFronts, replay],
+  );
+  const replayLast = replayBattle ? replayBattle.keyframes.length - 1 : 0;
+  const replayPlaying = replay?.playing ?? false;
+
+  // 재생 중에는 화면 한 장마다 t를 지난 시간만큼 앞으로 민다. 마지막 키프레임에 닿으면 멈춘다
+  useEffect(() => {
+    if (!replayPlaying) return;
+    let frame = 0;
+    let previous = performance.now();
+    const step = (now: number) => {
+      const dt = now - previous;
+      previous = now;
+      setReplay((r) => {
+        if (!r || !r.playing) return r;
+        const t = Math.min(replayLast, r.t + dt / SEGMENT_MS);
+        return { ...r, t, playing: t < replayLast };
+      });
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [replayPlaying, replayLast]);
+
+  // 카드를 닫고 처음부터 재생한다. "동작 줄이기"를 켠 사용자에게는 첫 키프레임을 멈춘 채로 보인다
+  const startReplay = (eventId: string) => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setSelectedId(null);
+    setReplay({ eventId, t: 0, playing: !reduceMotion });
+  };
+  // 재생을 멈추고 보던 스냅샷과 그 전투 카드로 돌아간다
+  const closeReplay = useCallback(() => {
+    if (replay) setSelectedId(replay.eventId);
+    setReplay(null);
+  }, [replay]);
 
   // 개전 앞의 사건이 있으면 타임라인 맨 앞에 "개전 전" 칸을 하나 더 둔다.
   // 지도는 개전 스냅샷(38선)을 그대로 쓴다. 기본(reviewed만)으로 켜서 그런 사건이 없으면 칸도 없다
@@ -135,6 +195,14 @@ export default function WarMapApp() {
   // 이야기 화면이 열려 있으면 키는 그 화면이 받는다
   useEffect(() => {
     if (storiesOpen || countriesOpen || accountOpen || boardOpen) return;
+    // 재생 중에는 Esc만 받는다 (재생을 닫는다). ←/→로 스냅샷을 넘기지 않는다
+    if (replayBattle) {
+      const onReplayKey = (event: KeyboardEvent) => {
+        if (event.key === "Escape") closeReplay();
+      };
+      window.addEventListener("keydown", onReplayKey);
+      return () => window.removeEventListener("keydown", onReplayKey);
+    }
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Escape") {
         setSelectedId(null);
@@ -144,58 +212,66 @@ export default function WarMapApp() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last, storiesOpen, countriesOpen, accountOpen, boardOpen]);
+  }, [last, storiesOpen, countriesOpen, accountOpen, boardOpen, replayBattle, closeReplay]);
 
   return (
     <main className="relative mx-auto flex h-dvh max-w-[480px] flex-col overflow-hidden">
       {/* 지도 위에 뜬 흰 머리말 카드: 날짜·몇 번째 칸, 스냅샷 이름, 로그인·이야기 버튼 */}
       <header className="px-3 pt-3 pb-1">
-        <div className="flex items-center justify-between gap-3 rounded-[18px] bg-white py-2.5 pr-2.5 pl-4 shadow-[0_2px_12px_rgba(26,29,33,0.08)]">
-          <div className="flex min-w-0 flex-col">
-            <p className="text-xs font-medium text-muted tabular-nums">
-              {heading}
-              {current && ` · ${index + 1}/${slots.length}`}
-            </p>
-            {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
-            <h1 className="truncate text-xl font-extrabold tracking-tight">{current ? current.title : " "}</h1>
+        {replayBattle ? (
+          <ReplayHeader
+            title={events.find((e) => e.id === replayBattle.eventId)?.title ?? ""}
+            onClose={closeReplay}
+          />
+        ) : (
+          <div className="flex items-center justify-between gap-3 rounded-[18px] bg-white py-2.5 pr-2.5 pl-4 shadow-[0_2px_12px_rgba(26,29,33,0.08)]">
+            <div className="flex min-w-0 flex-col">
+              <p className="text-xs font-medium text-muted tabular-nums">
+                {heading}
+                {current && ` · ${index + 1}/${slots.length}`}
+              </p>
+              {/* 불러오는 동안에도 줄 높이를 잡아 둬서, 이름이 나타날 때 지도가 밀리지 않게 한다 */}
+              <h1 className="truncate text-xl font-extrabold tracking-tight">{current ? current.title : " "}</h1>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAccountOpen(true)}
+                aria-label={me.loggedIn ? `내 정보 (${me.nickname ?? "닉네임 없음"})` : "로그인"}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-fill"
+              >
+                <PersonIcon filled={me.loggedIn} />
+              </button>
+              {/* 참전국·이야기는 시기와 상관없어서 스냅샷과 상관없이 늘 같은 자리에 둔다 */}
+              <button
+                type="button"
+                onClick={() => setCountriesOpen(true)}
+                className="inline-flex h-11 shrink-0 items-center rounded-full bg-fill px-3.5 text-sm font-bold"
+              >
+                참전국
+              </button>
+              <button
+                type="button"
+                onClick={() => setStoriesOpen(true)}
+                className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-bold text-white"
+              >
+                <BookIcon />
+                이야기
+              </button>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setAccountOpen(true)}
-              aria-label={me.loggedIn ? `내 정보 (${me.nickname ?? "닉네임 없음"})` : "로그인"}
-              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-fill"
-            >
-              <PersonIcon filled={me.loggedIn} />
-            </button>
-            {/* 참전국·이야기는 시기와 상관없어서 스냅샷과 상관없이 늘 같은 자리에 둔다 */}
-            <button
-              type="button"
-              onClick={() => setCountriesOpen(true)}
-              className="inline-flex h-11 shrink-0 items-center rounded-full bg-fill px-3.5 text-sm font-bold"
-            >
-              참전국
-            </button>
-            <button
-              type="button"
-              onClick={() => setStoriesOpen(true)}
-              className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-bold text-white"
-            >
-              <BookIcon />
-              이야기
-            </button>
-          </div>
-        </div>
+        )}
       </header>
 
       <div className="relative min-h-0 flex-1">
         {current && (
           <FrontlineMap
             snapshot={current}
-            events={visibleEvents}
+            events={replayBattle ? [] : visibleEvents}
             selectedId={selected?.id ?? null}
             onSelectEvent={setSelectedId}
-            edgeLayout={isPrewar}
+            edgeLayout={isPrewar && !replayBattle}
+            replay={replayBattle && replayFrame ? { battle: replayBattle, frame: replayFrame } : null}
           />
         )}
         {load.status === "loading" && <Notice>전선 데이터를 불러오는 중…</Notice>}
@@ -206,11 +282,31 @@ export default function WarMapApp() {
             <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.north }} />}>북측</Legend>
             <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.south }} />}>남측</Legend>
             <Legend swatch={<span className="h-0.5 w-3.5" style={{ background: COLORS.frontLine }} />}>전선</Legend>
+            {replayBattle && (
+              <Legend swatch={<span className="w-3.5 border-t-2 border-dashed" style={{ borderColor: COLORS.trailUn }} />}>
+                지나온 길
+              </Legend>
+            )}
           </div>
         )}
       </div>
 
-      {current && (
+      {current && replayBattle && replayFrame && replay && (
+        <BattleReplay
+          battle={replayBattle}
+          t={replay.t}
+          nearest={replayFrame.nearest}
+          playing={replay.playing}
+          onPick={(i) => setReplay({ ...replay, t: i, playing: false })}
+          // 끝까지 본 뒤 다시 누르면 처음부터 재생한다
+          onTogglePlay={() =>
+            setReplay({ ...replay, t: !replay.playing && replay.t >= replayLast ? 0 : replay.t, playing: !replay.playing })
+          }
+          onScrub={(t) => setReplay({ ...replay, t, playing: false })}
+        />
+      )}
+
+      {current && !replayBattle && (
         <section className="flex flex-col gap-4 rounded-t-[28px] bg-white px-5 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(26,29,33,0.12)]">
           <PanelTabs onBoard={() => setBoardOpen(true)} />
 
@@ -255,6 +351,11 @@ export default function WarMapApp() {
           canVote={me.loggedIn && !me.needsNickname}
           onNeedLogin={() => setAccountOpen(true)}
           onClose={() => setSelectedId(null)}
+          onReplay={
+            selected.kind === "battle" && battles.some((b) => b.eventId === selected.id)
+              ? () => startReplay(selected.id)
+              : undefined
+          }
         />
       )}
 
@@ -397,6 +498,28 @@ function Legend({ swatch, children }: { swatch: React.ReactNode; children: React
       {swatch}
       {children}
     </span>
+  );
+}
+
+// 재생 중 머리말 카드: "애니메이션 보기 · 대략적 재현"과 전투 이름, 닫기
+function ReplayHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[18px] bg-white py-2.5 pr-2.5 pl-4 shadow-[0_2px_12px_rgba(26,29,33,0.08)]">
+      <div className="flex min-w-0 flex-col">
+        <p className="text-xs font-medium text-muted">애니메이션 보기 · 대략적 재현</p>
+        <h1 className="truncate text-xl font-extrabold tracking-tight">{title}</h1>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="재생 닫고 사건 카드로"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-fill"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M3 3l8 8M11 3l-8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
   );
 }
 

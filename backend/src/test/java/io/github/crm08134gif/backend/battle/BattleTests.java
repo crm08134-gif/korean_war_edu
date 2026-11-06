@@ -38,7 +38,7 @@ class BattleTests {
             new BattleJson.Unit("nk-13", "북한 13사단", "kp", "communist"));
 
     static BattleJson.Keyframe day(String date, Map<String, List<Double>> positions) {
-        return new BattleJson.Keyframe(date, "설명", null, positions);
+        return new BattleJson.Keyframe(date, "설명", null, positions, null);
     }
 
     static final List<BattleJson.Keyframe> DAYS = List.of(
@@ -86,6 +86,28 @@ class BattleTests {
                 day("1950-08-18", Map.of("rok-1", List.of(128.5, 36.1))),
                 day("1950-08-13", Map.of("rok-1", List.of(128.5, 36.0))));
         assertThatThrownBy(() -> BattleCatalog.check(valid(UNITS, days), "dabudong.json")).hasMessageContaining("앞 날짜보다");
+    }
+
+    @Test
+    void 화살표는_통과하고_view_밖이나_첫_날짜면_막는다() {
+        BattleJson.Arrow ok = new BattleJson.Arrow("communist", List.of(List.of(128.4, 36.3), List.of(128.5, 36.15)));
+        BattleJson.Arrow outside = new BattleJson.Arrow("un", List.of(List.of(128.5, 36.0), List.of(130.0, 36.1)));
+        Map<String, List<Double>> at = Map.of("rok-1", List.of(128.5, 36.1));
+
+        List<BattleJson.Keyframe> good = List.of(
+                day("1950-08-13", at),
+                new BattleJson.Keyframe("1950-08-18", "설명", null, at, List.of(ok)));
+        BattleCatalog.check(valid(UNITS, good), "dabudong.json");
+
+        List<BattleJson.Keyframe> out = List.of(
+                day("1950-08-13", at),
+                new BattleJson.Keyframe("1950-08-18", "설명", null, at, List.of(outside)));
+        assertThatThrownBy(() -> BattleCatalog.check(valid(UNITS, out), "dabudong.json")).hasMessageContaining("view 밖");
+
+        List<BattleJson.Keyframe> onFirst = List.of(
+                new BattleJson.Keyframe("1950-08-13", "설명", null, at, List.of(ok)),
+                day("1950-08-18", at));
+        assertThatThrownBy(() -> BattleCatalog.check(valid(UNITS, onFirst), "dabudong.json")).hasMessageContaining("첫 날짜");
     }
 
     @Test

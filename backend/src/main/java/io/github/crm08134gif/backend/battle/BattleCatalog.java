@@ -35,6 +35,8 @@ class BattleCatalog implements ApplicationRunner {
     private static final int MIN_KEYFRAMES = 2;
     private static final int MAX_KEYFRAMES = 6;
     private static final int MAX_CAPTION = 80;
+    // 폰 화면에서 한 날짜에 화살표가 이보다 많으면 알아보기 어렵다
+    private static final int MAX_ARROWS = 8;
 
     private static final JsonMapper JSON = JsonMapper.builder()
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -147,6 +149,10 @@ class BattleCatalog implements ApplicationRunner {
         if (b.keyframes() == null || b.keyframes().size() < MIN_KEYFRAMES || b.keyframes().size() > MAX_KEYFRAMES) {
             throw new IllegalStateException("키프레임은 " + MIN_KEYFRAMES + "~" + MAX_KEYFRAMES + "개다");
         }
+        BattleJson.Keyframe first = b.keyframes().get(0);
+        if (first.arrows() != null && !first.arrows().isEmpty()) {
+            throw new IllegalStateException(first.date() + ": 첫 날짜에는 화살표를 달지 않는다 (앞 날짜부터의 움직임이라서)");
+        }
         LocalDate previous = null;
         for (BattleJson.Keyframe k : b.keyframes()) {
             LocalDate date = LocalDate.parse(k.date());
@@ -173,6 +179,28 @@ class BattleCatalog implements ApplicationRunner {
                     throw new IllegalStateException(k.date() + ": units에 없는 부대다: " + entry.getKey());
                 }
                 checkPoint(entry.getValue(), v, k.date() + " " + entry.getKey());
+            }
+            checkArrows(k, v);
+        }
+    }
+
+    // 화살표: 개수, 진영, 점 2개 이상, 좌표가 view 안. 첫 날짜는 앞 날짜가 없어 화살표를 달 수 없다
+    private static void checkArrows(BattleJson.Keyframe k, BattleJson.View v) {
+        if (k.arrows() == null) {
+            return;
+        }
+        if (k.arrows().size() > MAX_ARROWS) {
+            throw new IllegalStateException(k.date() + ": 화살표는 날짜마다 " + MAX_ARROWS + "개까지다");
+        }
+        for (BattleJson.Arrow arrow : k.arrows()) {
+            if (!"un".equals(arrow.side()) && !"communist".equals(arrow.side())) {
+                throw new IllegalStateException(k.date() + ": 화살표 side는 un 또는 communist다");
+            }
+            if (arrow.path() == null || arrow.path().size() < 2) {
+                throw new IllegalStateException(k.date() + ": 화살표는 점이 2개 이상이다");
+            }
+            for (List<Double> point : arrow.path()) {
+                checkPoint(point, v, k.date() + " 화살표");
             }
         }
     }

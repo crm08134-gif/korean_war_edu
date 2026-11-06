@@ -15,7 +15,7 @@ import {
   SAFE_BOUNDS,
   VIEW_LIMIT_BOUNDS,
   extraData,
-  trailData,
+  arrowData,
   warData,
 } from "@/lib/map-style";
 import type { Position, Snapshot } from "@/lib/snapshots";
@@ -266,12 +266,12 @@ export default function FrontlineMap({
     return () => {
       markers.forEach((marker) => marker.remove());
       markers.clear();
-      void source(map, "trails").setData(EMPTY_DATA);
+      void source(map, "arrows").setData(EMPTY_DATA);
       map.fitBounds(KOREA_BOUNDS, { padding: edgeRef.current ? EDGE_PADDING : PADDING, duration: 800 });
     };
   }, [replayBattle, ready]);
 
-  // 재생의 한 장면: 그 시각의 전선, 지나온 길, 부대 자리
+  // 재생의 한 장면: 그 시각의 전선, 화살표, 부대 자리
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !replayFrame) {
@@ -279,7 +279,10 @@ export default function FrontlineMap({
     }
     drawLine(map, replayFrame.front);
     shownLineRef.current = replayFrame.front;
-    void source(map, "trails").setData(trailData(replayFrame.units));
+    // 화살촉 길이는 확대한 범위(view) 폭의 4%
+    const view = replayBattle?.view;
+    const headSize = view ? (view.east - view.west) * 0.04 : 0.04;
+    void source(map, "arrows").setData(arrowData(replayFrame.arrows, headSize));
     for (const u of replayFrame.units) {
       const marker = unitMarkersRef.current.get(u.unit.id);
       if (!marker) continue;
@@ -287,7 +290,7 @@ export default function FrontlineMap({
       marker.getElement().style.opacity = String(u.opacity);
       marker.getElement().style.visibility = u.opacity > 0 ? "visible" : "hidden";
     }
-  }, [replayFrame, ready]);
+  }, [replayFrame, replayBattle, ready]);
 
   // "개전 전" 칸에 들어가거나 나올 때 한반도를 가장자리 여백에 맞춰 다시 맞춘다
   useEffect(() => {

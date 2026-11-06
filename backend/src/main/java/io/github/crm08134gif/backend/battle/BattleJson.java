@@ -26,7 +26,18 @@ record BattleJson(
     record Unit(String id, String name, String country, String side) {
     }
 
-    // 날짜 하나. front는 전투 지역의 전선 조각(서→동 [경도, 위도]), positions는 그날 있는 부대의 [경도, 위도]
-    record Keyframe(String date, String caption, List<List<Double>> front, Map<String, List<Double>> positions) {
+    // 날짜 하나. front는 전투 지역의 전선 조각(서→동 [경도, 위도]), positions는 그날 있는 부대의 [경도, 위도],
+    // arrows는 앞 날짜 다음 날부터 이 날짜까지의 공격·이동 화살표 (없으면 null)
+    record Keyframe(
+        String date,
+        String caption,
+        List<List<Double>> front,
+        Map<String, List<Double>> positions,
+        List<Arrow> arrows
+    ) {
+    }
+
+    // 화살표 하나. side는 un / communist, path는 꼬리 → 머리 순서의 [경도, 위도]
+    record Arrow(String side, List<List<Double>> path) {
     }
 }

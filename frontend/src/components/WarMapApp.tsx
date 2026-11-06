@@ -283,8 +283,15 @@ export default function WarMapApp() {
             <Legend swatch={<span className="size-2.5 rounded-sm" style={{ background: COLORS.south }} />}>남측</Legend>
             <Legend swatch={<span className="h-0.5 w-3.5" style={{ background: COLORS.frontLine }} />}>전선</Legend>
             {replayBattle && (
-              <Legend swatch={<span className="w-3.5 border-t-2 border-dashed" style={{ borderColor: COLORS.trailUn }} />}>
-                지나온 길
+              <Legend
+                swatch={
+                  <svg width="18" height="10" viewBox="0 0 18 10" aria-hidden="true">
+                    <path d="M1 5h11" stroke={COLORS.frontLine} strokeWidth="2.5" strokeLinecap="round" />
+                    <path d="M11 1l6 4-6 4z" fill={COLORS.frontLine} />
+                  </svg>
+                }
+              >
+                공격·이동
               </Legend>
             )}
           </div>

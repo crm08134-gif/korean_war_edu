@@ -11,9 +11,9 @@ export const COLORS = {
   north: "#db8580",
   south: "#7da3ce",
   frontLine: "#1a1d21",
-  // 전투 재생에서 부대가 지나온 길 (진영색보다 진하게, docs/battle-replay.md 1장)
-  trailUn: "#2f5f9e",
-  trailCommunist: "#a8403a",
+  // 전투 재생의 공격·이동 화살표 (진영색보다 진하게, docs/battle-replay.md 1장)
+  arrowUn: "#2f5f9e",
+  arrowCommunist: "#a8403a",
 } as const;
 
 // data/reference/korea_outline.geojson의 범위. 처음 화면을 한반도 전체에 맞춘다
@@ -40,6 +40,7 @@ export const SAFE_BOUNDS = {
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 const sideColor: ExpressionSpecification = ["match", ["get", "side"], "north", COLORS.north, COLORS.south];
+const arrowColor: ExpressionSpecification = ["match", ["get", "side"], "un", COLORS.arrowUn, COLORS.arrowCommunist];
 
 // 아래에서 위로 쌓는다: 바다 → 양측 색 → 추가 영역 → 바다 덮개 → 주변 나라 → 해안선 → 전선
 export const MAP_STYLE: StyleSpecification = {
@@ -49,7 +50,7 @@ export const MAP_STYLE: StyleSpecification = {
     war: { type: "geojson", data: EMPTY },
     extra: { type: "geojson", data: EMPTY },
     // 전투 재생 중에만 채운다
-    trails: { type: "geojson", data: EMPTY },
+    arrows: { type: "geojson", data: EMPTY },
     seaMask: { type: "geojson", data: "/geo/sea_mask.geojson" },
     neighbors: { type: "geojson", data: "/geo/neighbors.geojson" },
   },
@@ -81,33 +82,78 @@ export const MAP_STYLE: StyleSpecification = {
       filter: ["==", ["geometry-type"], "Point"],
       paint: { "circle-color": COLORS.frontLine, "circle-radius": 3 },
     },
+    // 화살표: 흰 테두리(선·촉) 위에 진영색 선과 촉을 얹는다
     {
-      id: "trails",
+      id: "arrow-casing",
       type: "line",
-      source: "trails",
-      layout: { "line-cap": "round" },
-      paint: {
-        "line-color": ["match", ["get", "side"], "un", COLORS.trailUn, COLORS.trailCommunist],
-        "line-width": 2.5,
-        "line-dasharray": [2, 1.6],
-        "line-opacity": ["get", "opacity"],
-      },
+      source: "arrows",
+      filter: ["==", ["geometry-type"], "LineString"],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#ffffff", "line-width": 9, "line-opacity": ["get", "opacity"] },
+    },
+    {
+      id: "arrow-head-casing",
+      type: "line",
+      source: "arrows",
+      filter: ["==", ["geometry-type"], "Polygon"],
+      layout: { "line-join": "round" },
+      paint: { "line-color": "#ffffff", "line-width": 4, "line-opacity": ["get", "opacity"] },
+    },
+    {
+      id: "arrow-line",
+      type: "line",
+      source: "arrows",
+      filter: ["==", ["geometry-type"], "LineString"],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": arrowColor, "line-width": 5, "line-opacity": ["get", "opacity"] },
+    },
+    {
+      id: "arrow-head",
+      type: "fill",
+      source: "arrows",
+      filter: ["==", ["geometry-type"], "Polygon"],
+      paint: { "fill-color": arrowColor, "fill-opacity": ["get", "opacity"] },
     },
   ],
 };
 
-// 전투 재생: 부대마다 처음 나타난 곳에서 지금 자리까지의 점선
-export function trailData(units: { unit: { side: string }; opacity: number; trail: Position[] }[]): FeatureCollection {
-  return {
-    type: "FeatureCollection",
-    features: units
-      .filter((u) => u.trail.length === 2)
-      .map((u) => ({
-        type: "Feature" as const,
-        properties: { side: u.unit.side, opacity: u.opacity },
-        geometry: { type: "LineString" as const, coordinates: u.trail },
-      })),
-  };
+// 전투 재생의 화살표: 선(촉 밑동까지)과 삼각형 촉. size는 촉 길이(경도 단위)로, view 폭에 맞춰 정한다.
+// 위도가 올라가면 경도 1도가 짧아지므로 남북 방향은 cos(위도)로 맞춰 촉이 찌그러지지 않게 한다
+export function arrowData(
+  arrows: { side: string; path: Position[]; opacity: number }[],
+  size: number,
+): FeatureCollection {
+  const features: FeatureCollection["features"] = [];
+  for (const arrow of arrows) {
+    if (arrow.path.length < 2 || arrow.opacity <= 0) continue;
+    const tip = arrow.path[arrow.path.length - 1];
+    const prev = arrow.path[arrow.path.length - 2];
+    const k = Math.cos((tip[1] * Math.PI) / 180);
+    // 평면(경도, 위도/k)에서 방향을 잡는다
+    const dx = tip[0] - prev[0];
+    const dy = (tip[1] - prev[1]) / k;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len === 0) continue;
+    const ux = dx / len;
+    const uy = dy / len;
+    const head = Math.min(size, len * 0.9 + size * 0.1);
+    const base: Position = [tip[0] - ux * head, tip[1] - uy * head * k];
+    const half = head * 0.5;
+    const left: Position = [base[0] - uy * half, base[1] + ux * half * k];
+    const right: Position = [base[0] + uy * half, base[1] - ux * half * k];
+    const properties = { side: arrow.side, opacity: arrow.opacity };
+    features.push({
+      type: "Feature",
+      properties,
+      geometry: { type: "LineString", coordinates: [...arrow.path.slice(0, -1), base] },
+    });
+    features.push({
+      type: "Feature",
+      properties,
+      geometry: { type: "Polygon", coordinates: [[tip, left, right, tip]] },
+    });
+  }
+  return { type: "FeatureCollection", features };
 }
 
 // 전선 하나로 양측 다각형, 전선, 양 끝점을 만든다

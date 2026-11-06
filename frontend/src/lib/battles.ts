@@ -16,6 +16,12 @@ export type BattleKeyframe = {
   caption: string;
   front: Position[] | null; // 전투 지역의 전선 조각(서→동). 없으면 그날 스냅샷 전선 그대로
   positions: Record<string, Position>; // 그날 있는 부대만
+  arrows: BattleArrow[] | null; // 앞 날짜 다음 날부터 이 날짜까지의 공격·이동
+};
+
+export type BattleArrow = {
+  side: BattleSide;
+  path: Position[]; // 꼬리 → 머리
 };
 
 export type Battle = {
@@ -108,14 +114,47 @@ export type UnitFrame = {
   unit: BattleUnit;
   at: Position;
   opacity: number; // 0이면 그날 없는 부대
-  trail: Position[]; // 처음 나타난 곳 → 지금 자리
+};
+
+// 지금 그릴 화살표 하나. path는 자라는 중이면 앞부분만이다
+export type ArrowFrame = {
+  side: BattleSide;
+  path: Position[];
+  opacity: number;
 };
 
 export type ReplayFrame = {
   front: Position[];
   units: UnitFrame[];
+  arrows: ArrowFrame[];
   nearest: number; // 지금 시각에 가장 가까운 키프레임
 };
+
+// 화살표가 구간의 85% 동안 자라고, 나머지 15%는 다 자란 채로 머문다 (데모와 같음)
+const ARROW_GROW = 0.85;
+// 다음 구간이 시작되면 앞 화살표는 구간의 첫 30% 동안 흐려진다
+const ARROW_FADE = 0.3;
+
+// 선을 앞에서부터 길이의 frac(0~1)만큼만 자른다
+export function partialLine(line: Position[], frac: number): Position[] {
+  if (frac >= 1) return line;
+  let total = 0;
+  for (let i = 1; i < line.length; i++) total += Math.sqrt(dist2(line[i - 1], line[i]));
+  const target = total * Math.max(0, frac);
+  const out: Position[] = [line[0]];
+  let walked = 0;
+  for (let i = 1; i < line.length; i++) {
+    const step = Math.sqrt(dist2(line[i - 1], line[i]));
+    if (walked + step >= target) {
+      const f = step === 0 ? 0 : (target - walked) / step;
+      out.push([line[i - 1][0] + (line[i][0] - line[i - 1][0]) * f, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * f]);
+      return out;
+    }
+    walked += step;
+    out.push(line[i]);
+  }
+  return out;
+}
 
 // 천천히 출발해 천천히 멈춘다 (데모와 같은 곡선)
 function smooth(x: number): number {
@@ -154,22 +193,25 @@ export function frameAt(battle: Battle, fronts: Position[][], t: number): Replay
       at = [0, 0];
       opacity = 0;
     }
-    let start: Position | null = null;
-    for (const k of battle.keyframes) {
-      if (k.positions[unit.id]) {
-        start = k.positions[unit.id];
-        break;
-      }
-    }
-    return {
-      unit,
-      at,
-      opacity,
-      trail: start && opacity > 0 ? [start, at] : [],
-    };
+    return { unit, at, opacity };
   });
 
-  return { front, units, nearest: Math.round(clamped) };
+  // 지금 구간(seg → seg+1)의 화살표는 자라나고, 앞 구간(seg에 도착한) 화살표는 흐려진다
+  const raw = clamped - seg;
+  const arrows: ArrowFrame[] = [];
+  if (raw > 0) {
+    for (const arrow of b.arrows ?? []) {
+      arrows.push({ side: arrow.side, path: partialLine(arrow.path, raw / ARROW_GROW), opacity: 1 });
+    }
+  }
+  const fade = 1 - raw / ARROW_FADE;
+  if (fade > 0) {
+    for (const arrow of a.arrows ?? []) {
+      arrows.push({ side: arrow.side, path: arrow.path, opacity: fade });
+    }
+  }
+
+  return { front, units, arrows, nearest: Math.round(clamped) };
 }
 
 // 1950-08-13 → 1950. 8. 13.

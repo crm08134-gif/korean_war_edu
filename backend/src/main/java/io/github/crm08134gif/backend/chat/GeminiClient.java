@@ -45,7 +45,7 @@ class GeminiClient {
                 new GeminiApi.GenerationConfig(MAX_OUTPUT_TOKENS, new GeminiApi.ThinkingConfig("low")));
 
         GeminiApi.Response response = rest.post()
-                // {model} 자리에 모델 이름이 들어간다. 예: /models/gemini-3.8-flash:generateContent
+                // {model} 자리에 모델 이름이 들어간다. 예: /models/gemini-3.5-flash-lite:generateContent
                 .uri("/models/{model}:generateContent", model)
                 // 키는 주소(?key=)가 아니라 머리글로 보낸다. 주소는 로그에 남을 수 있다
                 .header("x-goog-api-key", apiKey)

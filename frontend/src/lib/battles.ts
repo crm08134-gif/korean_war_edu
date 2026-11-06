@@ -31,6 +31,7 @@ export type Battle = {
   units: BattleUnit[];
   keyframes: BattleKeyframe[];
   showFront: boolean; // false면 재생 중 전선과 양측 색을 감춘다 (근거 지도에 전선이 없는 전투)
+  places: { name: string; at: Position }[]; // 근거 지도에 적힌 지명 (위치를 알아보게)
 };
 
 export async function fetchBattles(signal?: AbortSignal): Promise<Battle[]> {

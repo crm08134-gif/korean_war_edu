@@ -9,6 +9,7 @@ record BattleResponse(
     List<BattleJson.MapRef> maps,
     List<BattleJson.Unit> units,
     List<BattleJson.Keyframe> keyframes,
-    boolean showFront
+    boolean showFront,
+    List<BattleJson.Place> places
 ) {
 }

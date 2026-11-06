@@ -30,7 +30,7 @@ class BattleTests {
         return new BattleJson("dabudong", "draft",
                 new BattleJson.View(128.0, 35.7, 129.0, 36.6),
                 List.of(new BattleJson.MapRef("CMH Pub 20-2, Map 0", null)),
-                units, keyframes, null);
+                units, keyframes, null, null);
     }
 
     static final List<BattleJson.Unit> UNITS = List.of(
@@ -108,6 +108,19 @@ class BattleTests {
                 new BattleJson.Keyframe("1950-08-13", "설명", null, at, List.of(ok)),
                 day("1950-08-18", at));
         assertThatThrownBy(() -> BattleCatalog.check(valid(UNITS, onFirst), "dabudong.json")).hasMessageContaining("첫 날짜");
+    }
+
+    @Test
+    void 지명은_view_안이어야_한다() {
+        BattleJson ok = new BattleJson("dabudong", "draft", new BattleJson.View(128.0, 35.7, 129.0, 36.6),
+                List.of(new BattleJson.MapRef("CMH Pub 20-2, Map 0", null)), UNITS, DAYS, null,
+                List.of(new BattleJson.Place("다부동", List.of(128.52, 36.05))));
+        BattleCatalog.check(ok, "dabudong.json");
+
+        BattleJson outside = new BattleJson("dabudong", "draft", new BattleJson.View(128.0, 35.7, 129.0, 36.6),
+                List.of(new BattleJson.MapRef("CMH Pub 20-2, Map 0", null)), UNITS, DAYS, null,
+                List.of(new BattleJson.Place("대구", List.of(128.6, 35.6))));
+        assertThatThrownBy(() -> BattleCatalog.check(outside, "dabudong.json")).hasMessageContaining("view 밖");
     }
 
     @Test

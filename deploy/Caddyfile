@@ -1,0 +1,6 @@
+# 이 도메인으로 오는 요청을 HTTPS로 받아 프론트(Next)에 넘긴다.
+# 인증서(Let's Encrypt)는 Caddy가 자동으로 받고 갱신한다. /api 등은 Next가 다시 백엔드로 넘긴다.
+koreanwar-edu.tech {
+	encode zstd gzip
+	reverse_proxy frontend:3000
+}

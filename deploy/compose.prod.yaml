@@ -1,0 +1,60 @@
+# 운영 서버(Lightsail)용 묶음: Caddy(HTTPS) → frontend(Next) → backend(Spring) → db(PostGIS)
+#   이 폴더(compose.prod.yaml, Caddyfile)와 .env만 서버에 두고 실행한다. 순서는 deploy/README.md
+#   실행:   docker compose -f compose.prod.yaml pull && docker compose -f compose.prod.yaml up -d
+#   로그:   docker compose -f compose.prod.yaml logs -f backend
+name: korean-war
+
+services:
+  db:
+    image: postgis/postgis:18-3.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?.env에 POSTGRES_DB를 설정하세요}
+      POSTGRES_USER: ${POSTGRES_USER:?.env에 POSTGRES_USER를 설정하세요}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?.env에 POSTGRES_PASSWORD를 설정하세요}
+    # ports가 없다: DB는 compose 안(backend)에서만 접속하고 바깥에는 열지 않는다
+    volumes:
+      # PostgreSQL 18 이미지부터 데이터 볼륨 위치가 /var/lib/postgresql로 바뀌었다
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    # main에 머지될 때 GitHub Actions가 만들어 올린 이미지 (.github/workflows/images.yml)
+    image: ghcr.io/crm08134-gif/korean-war-backend:latest
+    restart: unless-stopped
+    # 키(카카오·구글·JWT·Gemini)와 POSTGRES_*를 .env에서 받는다. application-prod.yaml이 POSTGRES_*로 DB에 붙는다
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/crm08134-gif/korean-war-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    # 바깥에 여는 포트는 여기뿐이다. 80은 인증서 발급과 https로 넘기기에 쓴다
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # 받은 인증서를 보관한다. 지우면 다시 발급받아야 한다
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:

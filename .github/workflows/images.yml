@@ -1,0 +1,51 @@
+# main에 머지될 때마다 운영용 이미지 두 개를 만들어 GitHub 컨테이너 저장소(ghcr.io)에 올린다.
+# 서버는 빌드하지 않고 이 이미지를 받아(pull) 실행만 한다 (2GB 서버에서 빌드하면 메모리가 모자란다).
+name: Images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:     # Actions 탭에서 손으로 다시 돌릴 수 있게
+
+# 코드는 읽기만, 이미지 저장소(packages)에는 쓰기
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    name: build and push images
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 받기
+        uses: actions/checkout@v7
+
+      - name: ghcr.io 로그인 (이 저장소의 GITHUB_TOKEN)
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Buildx 준비
+        uses: docker/setup-buildx-action@v4
+
+      # 백엔드는 data/가 필요해서 저장소 맨 위를 빌드 컨텍스트로 쓴다 (backend/Dockerfile 주석)
+      - name: 백엔드 이미지
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/crm08134-gif/korean-war-backend:latest
+            ghcr.io/crm08134-gif/korean-war-backend:${{ github.sha }}
+
+      - name: 프론트 이미지
+        uses: docker/build-push-action@v7
+        with:
+          context: frontend
+          push: true
+          tags: |
+            ghcr.io/crm08134-gif/korean-war-frontend:latest
+            ghcr.io/crm08134-gif/korean-war-frontend:${{ github.sha }}

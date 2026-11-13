@@ -1,0 +1,13 @@
+# 운영 서버에서만 쓰는 설정. SPRING_PROFILES_ACTIVE=prod일 때 application.yaml 위에 덮어쓴다
+spring:
+  datasource:
+    # compose.prod.yaml 안의 db 컨테이너. 로컬처럼 docker-compose 지원이 주소를 자동으로 넣어 주지 않으므로 직접 적는다
+    url: jdbc:postgresql://db:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+springdoc:
+  # API 문서 화면(Swagger)과 그 JSON을 운영에서는 끈다
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

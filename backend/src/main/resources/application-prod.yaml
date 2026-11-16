@@ -11,3 +11,6 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+# 운영에서는 켠다. k6 50명에서 db CPU 100%였던 원인(요청마다 같은 조회)을 없앤다
+public-data:
+  cache: true

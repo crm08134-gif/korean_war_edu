@@ -58,3 +58,6 @@ chat:
   daily-limit: 20
   # 모든 회원을 합친 하루 질문 수. 구글 무료 한도보다 낮게 둔다
   global-daily-limit: 200
+# 바뀌지 않는 공개 자료(전선·사건·이야기) 응답을 메모리에 둘지. 테스트는 행을 넣고 바로 읽으므로 기본은 끈다
+public-data:
+  cache: false

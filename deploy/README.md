@@ -1,7 +1,8 @@
 # 운영 배포 (AWS Lightsail 서울, Docker Compose)
 
 ```
-인터넷 ─443→ caddy ─→ frontend(Next, 3000) ─/api·/photos·/oauth2→ backend(8080) ─→ db(PostGIS)
+인터넷 ─443→ caddy ─┬─ /api·/photos·/oauth2·/login/oauth2 ─→ backend(8080) ─→ db(PostGIS)
+                    └─ 그 밖(화면) ─────────────────────────→ frontend(Next, 3000)
 ```
 
 - 이미지는 main에 머지될 때 GitHub Actions(`.github/workflows/images.yml`)가 만들어 `ghcr.io/crm08134-gif/`에 올린다. 서버는 받아서 실행만 한다.
@@ -42,6 +43,16 @@
 ## 새 버전 올리기
 
 main에 머지 → Actions의 Images가 끝나면 서버에서 같은 5번 명령을 다시 실행한다.
+
+`Caddyfile`이나 `compose.prod.yaml`이 바뀌었으면 먼저 서버의 파일을 새로 받는다(이미지와 따로 내려받은 파일이라서).
+
+```bash
+cd ~/korean-war
+for f in compose.prod.yaml Caddyfile; do curl -fsSLO https://raw.githubusercontent.com/crm08134-gif/korean_war_edu/main/deploy/$f; done
+docker compose -f compose.prod.yaml exec caddy caddy validate --config /etc/caddy/Caddyfile   # 문법 확인
+docker compose -f compose.prod.yaml up -d
+docker compose -f compose.prod.yaml exec caddy caddy reload --config /etc/caddy/Caddyfile     # 새 Caddyfile 읽기
+```
 
 ## 백업 (수동)
 

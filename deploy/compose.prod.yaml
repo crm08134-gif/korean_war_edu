@@ -1,4 +1,4 @@
-# 운영 서버(Lightsail)용 묶음: Caddy(HTTPS) → frontend(Next) → backend(Spring) → db(PostGIS)
+# 운영 서버(Lightsail)용 묶음: Caddy(HTTPS) → frontend(Next, 화면) / backend(Spring, /api 등) → db(PostGIS)
 #   이 폴더(compose.prod.yaml, Caddyfile)와 .env만 서버에 두고 실행한다. 순서는 deploy/README.md
 #   실행:   docker compose -f compose.prod.yaml pull && docker compose -f compose.prod.yaml up -d
 #   로그:   docker compose -f compose.prod.yaml logs -f backend
@@ -53,6 +53,7 @@ services:
       - caddy-config:/config
     depends_on:
       - frontend
+      - backend
 
 volumes:
   db-data:

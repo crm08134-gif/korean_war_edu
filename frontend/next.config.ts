@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 // 백엔드(Spring Boot) 주소. 브라우저와 폰은 Next 서버(3000)에만 접속하고,
 // /api 요청은 Next 서버가 PC 안에서 백엔드로 넘긴다. 그래서 CORS 설정이 필요 없다.
 // 주의: rewrites의 주소는 next build 때 결과물에 박힌다. 운영 이미지는 빌드할 때 BACKEND_URL을 준다(frontend/Dockerfile).
+// 운영에서는 Caddy(deploy/Caddyfile)가 같은 주소를 백엔드로 바로 넘겨 이 rewrites까지 오지 않는다. 주소를 늘리면 Caddyfile도 고친다.
 const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8080";
 
 const nextConfig: NextConfig = {

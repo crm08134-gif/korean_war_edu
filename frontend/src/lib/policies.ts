@@ -110,7 +110,7 @@ export const POLICIES: Record<PolicyId, Policy> = {
   privacy: {
     id: "privacy",
     title: "개인정보 처리방침",
-    updated: "시행일 2026년 11월 4일",
+    updated: "시행일 2026년 11월 16일",
     sections: [
       {
         heading: "1. 처리하는 개인정보",

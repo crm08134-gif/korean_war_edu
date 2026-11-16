@@ -1,5 +1,5 @@
 // 운영 정책·이용약관·개인정보 처리방침 초안.
-// Claude가 쓴 초안이며 법률 자문이 아니다. 공개 전에 운영자가 직접 검토하고 [ ] 칸을 채운다 (CLAUDE.md 7장 "배포 전에 할 것")
+// Claude가 쓴 초안이며 법률 자문이 아니다. 공개 전에 운영자가 직접 한 번 검토한다 (CLAUDE.md 7장 "배포 전에 할 것")
 // 내용은 실제 코드가 하는 일과 맞춰 적었다. 코드가 바뀌면(받는 정보, 쿠키, 보관 기간) 여기도 고친다
 
 export type PolicyId = "rules" | "terms" | "privacy";
@@ -8,7 +8,7 @@ export type PolicySection = { heading: string; paragraphs?: string[]; items?: st
 
 export type Policy = { id: PolicyId; title: string; updated: string; sections: PolicySection[] };
 
-export const DRAFT_NOTICE = "[ ]로 표시한 칸은 서버 환경이 정해지면 채웁니다.";
+export const DRAFT_NOTICE = "운영자가 검토 중인 초안입니다. 바뀌면 이 화면에 알립니다.";
 
 export const RULES_SUMMARY = [
   "사료를 근거로 한 서로 다른 해석과 토론을 환영합니다. 의견이 다르다는 이유만으로 가리지 않습니다.",
@@ -110,7 +110,7 @@ export const POLICIES: Record<PolicyId, Policy> = {
   privacy: {
     id: "privacy",
     title: "개인정보 처리방침",
-    updated: "시행일 2026년 11월 4일",
+    updated: "시행일 2026년 11월 16일",
     sections: [
       {
         heading: "1. 처리하는 개인정보",
@@ -119,7 +119,7 @@ export const POLICIES: Record<PolicyId, Policy> = {
           "서비스 이용 중: 닉네임, 가입·닉네임 변경 시각, 쓴 글·댓글과 시각, 공감, 신고 기록, 로그인한 기기의 브라우저 정보(예: Chrome · Windows).",
           "인물 좋아요·싫어요: 누른 회원과 표. 숫자는 모두에게 보이지만 누가 눌렀는지는 보이지 않습니다.",
           "AI 질문: 회원별 하루 질문 횟수만 저장합니다. 질문과 답의 내용은 서버에 저장하지 않습니다(아래 4번처럼 답을 만들기 위해 구글로 보냅니다).",
-          "[배포 환경 확정 후: 서버 접속 기록(IP 주소 등)을 남기는지, 남긴다면 보관 기간]",
+          "접속 기록: IP 주소를 저장하지 않습니다. 서버 프로그램(Caddy·Next·Spring)의 접속 기록 기능도 켜지 않았습니다.",
         ],
       },
       {
@@ -147,7 +147,9 @@ export const POLICIES: Record<PolicyId, Policy> = {
         heading: "4. 다른 곳에 주는 정보",
         items: [
           "개인정보를 다른 사람이나 회사에 제공하지 않습니다.",
-          "서버와 데이터베이스는 [클라우드 업체·지역]에 둡니다. [국외에 둔다면 이전 국가, 항목, 기간]",
+          "서버와 데이터베이스는 아마존 웹 서비스(Amazon Web Services, Inc., 미국 410 Terry Avenue North, Seattle, WA 98109-5210)의 Lightsail 서비스, 아시아 태평양(시드니) 리전(호주)에 둡니다. 서버를 맡기는 처리 위탁이면서 개인정보의 국외 이전입니다.",
+          "국외 이전 내용: 위 1번의 모든 정보를, 서비스를 이용할 때마다 암호화된 통신(HTTPS)으로 호주의 서버에 보내 저장합니다. 목적은 서비스 운영이며, 보관 기간은 위 3번과 같습니다. AWS의 처리는 AWS 개인정보 처리방침(aws.amazon.com/privacy)을 따릅니다.",
+          "국외 이전을 원하지 않으면 로그인하지 않으면 됩니다. 로그인하지 않아도 지도·사건 카드·이야기·참전국은 볼 수 있고, 게시판 글쓰기·좋아요·AI 질문은 쓸 수 없습니다. 이미 가입했다면 내 정보 화면에서 탈퇴할 수 있습니다.",
           "로그인은 카카오·구글의 화면에서 합니다. 그 과정에서 카카오·구글이 처리하는 정보는 각 회사의 처리방침을 따릅니다.",
           "AI 질문: 질문 글, 같은 시트에서 앞서 주고받은 말, 그 카드의 내용을 답을 만들기 위해 구글(Google LLC, 미국)의 Gemini API로 보냅니다. 회원 번호·닉네임은 보내지 않습니다. 무료 이용 조건에 따라 구글이 보낸 내용을 서비스 개선에 쓸 수 있으므로, 질문에 개인정보를 적지 마세요. 구글의 처리는 구글의 약관과 처리방침을 따릅니다. 질문하지 않으면 아무것도 보내지 않습니다.",
         ],

@@ -1,7 +1,9 @@
 package io.github.crm08134gif.backend.chat;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 // AI에게 넘길 카드 내용 읽기와 하루 질문 횟수 세기
 @Repository
@@ -89,6 +91,16 @@ class ChatRepository {
             WHERE day = (now() AT TIME ZONE 'Asia/Seoul')::date
             """;
 
+    // 전체 한도 검사와 +1을 한 줄로 세우는 잠금 번호. 이 번호를 쓰는 곳은 useWithinGlobal 하나뿐이다
+    private static final long GLOBAL_LIMIT_LOCK = 20261117L;
+
+    // 번호표 잠금. 같은 번호를 이미 누가 잡았으면 풀릴 때까지 기다린다.
+    // _xact_가 붙은 것은 트랜잭션이 끝날 때(커밋·롤백) 저절로 풀린다
+    private static final String LOCK = "SELECT pg_advisory_xact_lock(:key)";
+
+    // 전체 한도에 닿아서 못 썼다는 표시. 회원 한도에 닿았을 때(null)와 구별한다
+    static final int GLOBAL_FULL = -1;
+
     private final JdbcClient jdbc;
 
     ChatRepository(JdbcClient jdbc) {
@@ -112,6 +124,21 @@ class ChatRepository {
                 .query(String.class)
                 .optional()
                 .orElse(null);
+    }
+
+    // 전체 한도와 회원 한도를 함께 보고 한 번 쓴다.
+    // 잠금 → 오늘 합계 읽기 → +1 을 한 트랜잭션에서 하므로, 동시에 와도 다른 요청이 사이에 끼지 못한다
+    // 전체 한도에 닿았으면 GLOBAL_FULL, 회원 한도에 닿았으면 null, 썼으면 그 회원의 오늘 횟수
+    @Transactional
+    Integer useWithinGlobal(long memberId, int limit, int globalLimit) {
+        jdbc.sql(LOCK)
+                .param("key", GLOBAL_LIMIT_LOCK)
+                .query()
+                .listOfRows();
+        if (todayTotal() >= globalLimit) {
+            return GLOBAL_FULL;
+        }
+        return use(memberId, limit);
     }
 
     // 쓰고 난 오늘 횟수. 한도에 닿아 못 썼으면 null

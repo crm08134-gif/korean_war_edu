@@ -75,11 +75,12 @@ class ChatService {
         if (!gemini.isConfigured()) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "AI 질문이 아직 준비되지 않았습니다");
         }
-        if (repository.todayTotal() >= globalDailyLimit) {
+        // 전체 한도 검사와 +1은 DB 잠금 안에서 한 번에 한다 (동시 요청에서도 전체 한도를 넘지 않게)
+        Integer used = repository.useWithinGlobal(memberId, dailyLimit, globalDailyLimit);
+        if (used != null && used == ChatRepository.GLOBAL_FULL) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "오늘은 AI 질문이 모두 마감됐습니다. 내일 다시 써 주세요");
         }
-        Integer used = repository.use(memberId, dailyLimit);
         if (used == null) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "AI 질문은 하루 " + dailyLimit + "번까지 할 수 있습니다");

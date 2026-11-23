@@ -66,7 +66,9 @@ class SecurityConfig {
                         // "/*"는 경로 한 칸만. /api/posts/5는 열리고 /api/posts/5/comments는 안 열린다
                         .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh", "/api/auth/logout").permitAll()
-                        .requestMatchers("/photos/**", "/error", "/actuator/health").permitAll()
+                        // /actuator/prometheus: 부하 실험 때 Prometheus가 지표를 가져간다.
+                        // 운영에서는 이 주소를 열지 않고(노출 기본값은 health뿐) Caddy도 /actuator를 backend로 보내지 않는다
+                        .requestMatchers("/photos/**", "/error", "/actuator/health", "/actuator/prometheus").permitAll()
                         // API 문서. 배포 전에 닫는다
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

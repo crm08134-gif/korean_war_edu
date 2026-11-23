@@ -1,0 +1,23 @@
+# 운영 deploy/Caddyfile과 같은 규칙. 도메인 대신 localhost에 Caddy 자체 인증서(tls internal)로 HTTPS를 켠다
+# (운영에서 Caddy가 하는 TLS·압축 일을 똑같이 시키기 위해서)
+# 관측: 관리 API(:2019)의 /metrics로 요청 수·처리 시간을 내보낸다 (로컬 전용, 운영 Caddyfile에는 없음)
+{
+	admin :2019
+	metrics
+}
+
+# caddy:8443 = Docker 네트워크 안에서 k6 컨테이너가 부르는 이름 (포트 전달을 거치지 않는 측정용)
+localhost:8443, caddy:8443 {
+	tls internal
+	# 실험 2-1: 압축을 끈다 (압축 비용이 Caddy CPU의 얼마인지 보기)
+	# encode zstd gzip
+
+	@backend path /api/* /photos/* /oauth2/* /login/oauth2/*
+	handle @backend {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

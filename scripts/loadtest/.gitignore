@@ -1,0 +1,8 @@
+# 실험 결과물은 저장소에 넣지 않는다(크고, 실험마다 생김)
+result-*.json
+report-*.html
+metrics-*.json
+run-*.meta.txt
+charts/
+prod/
+local-stack/stats-*.log

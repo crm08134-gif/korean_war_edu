@@ -1,0 +1,94 @@
+# 용량 산정용 로컬 묶음. 운영(deploy/compose.prod.yaml)과 같은 이미지·구성을 PC의 Docker에 띄운다.
+# 운영과 다른 점: 주소가 https://localhost:8443(자체 인증서), 로그인 키는 가짜, AI 키 없음, 데이터는 시작할 때 새로 적재.
+# 서버 크기: .wslconfig로 Docker 전체를 vCPU 3·메모리 3GB로 두고, 앱 4개는 CPU 0·1번(운영과 같은 2개)에,
+# 관측 도구(Prometheus·Grafana)는 CPU 2번에 묶어 측정 대상과 CPU를 다투지 않게 한다.
+#   켜기: docker compose up -d   끄기: docker compose down -v
+name: korean-war-loadtest
+
+services:
+  db:
+    cpuset: "0,1"
+    image: postgis/postgis:18-3.6
+    env_file: .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    cpuset: "0,1"
+    # BACKEND_IMAGE로 PC에서 빌드한 이미지를 쓸 수 있다 (머지 전 실험용)
+    image: ${BACKEND_IMAGE:-ghcr.io/crm08134-gif/korean-war-backend:latest}
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    cpuset: "0,1"
+    image: ghcr.io/crm08134-gif/korean-war-frontend:latest
+    depends_on:
+      - backend
+
+  caddy:
+    cpuset: "0,1"
+    image: caddy:2
+    ports:
+      - "8443:8443"
+    volumes:
+      - ${CADDYFILE:-./Caddyfile}:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - frontend
+      - backend
+
+  # 관측: 5초마다 backend·Caddy 지표를 모으고, k6 결과도 받는다(remote write). http://localhost:9090
+  prometheus:
+    image: prom/prometheus:latest
+    cpuset: "2"
+    mem_limit: 400m
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --storage.tsdb.retention.time=14d
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom-data:/prometheus
+
+  # 그래프: http://localhost:3001 (로그인 없음, 로컬 전용)
+  grafana:
+    image: grafana/grafana:latest
+    cpuset: "2"
+    mem_limit: 300m
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+  # 부하 발생기를 Docker 네트워크 안에서 돌린다 (PC → Docker 포트 전달을 거치지 않게). 평소에는 뜨지 않는다
+  #   docker compose run --rm k6 run ...   (run-capacity.sh가 RUNNER=docker일 때 쓴다)
+  k6:
+    image: grafana/k6:latest
+    profiles: ["k6"]
+    cpuset: "2"
+    working_dir: /work
+    volumes:
+      - ..:/work
+    environment:
+      BASE_URL: https://caddy:8443
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: p(95),avg
+    depends_on:
+      - caddy
+
+volumes:
+  prom-data:
